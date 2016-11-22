@@ -23,6 +23,7 @@ const NSTimeInterval kRequestTimeoutInterval = 10.0;
 @property (nonatomic, copy) NSURL *URL;
 @property (nonatomic, strong) NSURLSessionTask *task;
 @property (nonatomic, strong) MPLogEvent *adRequestLatencyEvent;
+@property (nonatomic, strong) NSURLSession *urlSession;
 
 - (NSError *)errorForStatusCode:(NSInteger)statusCode;
 - (NSURLRequest *)adRequestForURL:(NSURL *)URL;
@@ -43,6 +44,8 @@ const NSTimeInterval kRequestTimeoutInterval = 10.0;
     self = [super init];
     if (self) {
         self.delegate = delegate;
+        NSURLSessionConfiguration *configuration = [NSURLSessionConfiguration defaultSessionConfiguration];
+        self.urlSession = [NSURLSession sessionWithConfiguration:configuration delegate:nil delegateQueue:[NSOperationQueue mainQueue]];
     }
     return self;
 }
@@ -64,8 +67,8 @@ const NSTimeInterval kRequestTimeoutInterval = 10.0;
     self.adRequestLatencyEvent.requestURI = URL.absoluteString;
     
     __weak typeof(self) weakSelf = self;
-    self.task = [[NSURLSession sharedSession] dataTaskWithRequest:[self adRequestForURL:URL]
-                                                completionHandler:^(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error)
+    self.task = [self.urlSession dataTaskWithRequest:[self adRequestForURL:URL]
+                                   completionHandler:^(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error)
     {
         if (![weakSelf continueWithResponse:response])
             return;
