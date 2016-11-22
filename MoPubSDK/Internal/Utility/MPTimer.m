@@ -47,7 +47,7 @@
                                     userInfo:nil
                                      repeats:repeats];
     timer.timeInterval = seconds;
-    timer.runLoopMode = NSDefaultRunLoopMode;
+    timer.runLoopMode = NSRunLoopCommonModes;
     return timer;
 }
 
