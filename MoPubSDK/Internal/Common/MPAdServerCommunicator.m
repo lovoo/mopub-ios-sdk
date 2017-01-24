@@ -52,7 +52,7 @@ const NSTimeInterval kRequestTimeoutInterval = 10.0;
 
 - (void)dealloc
 {
-    [self.task cancel];
+    [self.urlSession invalidateAndCancel];
 }
 
 #pragma mark - Public
