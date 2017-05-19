@@ -1,7 +1,7 @@
 {
   "name": "mopub-ios-sdk",
   "module_name": "MoPub",
-  "version": "4.13.1",
+  "version": "4.14.0",
   "license": {
     "type": "New BSD",
     "file": "LICENSE"
@@ -15,7 +15,7 @@
   "social_media_url": "http://twitter.com/mopub",
   "source": {
     "git": "https://github.com/mopub/mopub-ios-sdk.git",
-    "tag": "4.13.1"
+    "tag": "4.14.0"
   },
   "requires_arc": true,
   "platforms": {
@@ -87,7 +87,7 @@
 
         ],
         "FBAudienceNetwork": [
-          "~> 4.15.1"
+          "~> 4.20.2"
         ]
       },
       "source_files": "AdNetworkSupport/Facebook/*.{h,m}"
