@@ -99,10 +99,10 @@
 
         ],
         "Flurry-iOS-SDK/FlurrySDK": [
-          "~> 7.6.4"
+          "~> 8.1.0"
         ],
         "Flurry-iOS-SDK/FlurryAds": [
-          "~> 7.6.4"
+          "~> 8.1.0"
         ]
       },
       "source_files": "AdNetworkSupport/Flurry/*.{h,m}"
