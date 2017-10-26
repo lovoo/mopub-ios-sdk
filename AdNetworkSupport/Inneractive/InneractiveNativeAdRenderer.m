@@ -16,7 +16,7 @@
 #import "MPNativeAdRendererConfiguration.h"
 #import "InneractiveNativeCustomEvent.h"
 
-@import InneractiveAdSDK;
+#import <InneractiveAdSDK/InneractiveAdSDK.h>
 
 #import "MPNativeAdRendererConstants.h"
 

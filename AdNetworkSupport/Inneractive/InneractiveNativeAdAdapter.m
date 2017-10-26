@@ -8,7 +8,7 @@
 
 #import "InneractiveNativeAdAdapter.h"
 
-@import InneractiveAdSDK;
+#import <InneractiveAdSDK/InneractiveAdSDK.h>
 
 @interface InneractiveNativeAdAdapter () <InneractiveAdDelegate>
 

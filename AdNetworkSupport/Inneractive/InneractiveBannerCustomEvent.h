@@ -7,7 +7,7 @@
 //
 
 #import "MPBannerCustomEvent.h"
-@import InneractiveAdSDK;
+#import <InneractiveAdSDK/InneractiveAdSDK.h>
 
 /**
  *  @brief Banner Custom Event Class for MoPub SDK.

@@ -7,7 +7,7 @@
 //
 
 #import "InneractiveNativeAdRenderingAdapterView.h"
-@import InneractiveAdSDK;
+#import <InneractiveAdSDK/InneractiveAdSDK.h>
 
 @interface InneractiveNativeAdRenderingAdapterView ()
 

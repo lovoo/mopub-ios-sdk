@@ -7,7 +7,7 @@
 //
 
 #import "MPInterstitialCustomEvent.h"
-@import InneractiveAdSDK;
+#import <InneractiveAdSDK/InneractiveAdSDK.h>
 
 /**
  *  @brief Interstitial Custom Event Class for MoPub SDK.

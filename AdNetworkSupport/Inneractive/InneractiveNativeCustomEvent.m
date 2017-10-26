@@ -9,7 +9,7 @@
 #import "InneractiveNativeCustomEvent.h"
 #import "InneractiveCustomEventsKeys.h"
 
-@import InneractiveAdSDK;
+#import <InneractiveAdSDK/InneractiveAdSDK.h>
 
 #import "InneractiveNativeAdAdapter.h"
 #import "InneractiveNativeAdRenderer.h"

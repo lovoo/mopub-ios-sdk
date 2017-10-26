@@ -8,7 +8,7 @@
 
 #import "MPNativeAdRendering.h"
 
-@import InneractiveAdSDK;
+#import <InneractiveAdSDK/InneractiveAdSDK.h>
 
 /**
  *  @protocol InneractiveDynamicSizeDelegate
