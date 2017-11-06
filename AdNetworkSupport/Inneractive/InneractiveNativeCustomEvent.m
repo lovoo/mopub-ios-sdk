@@ -85,6 +85,8 @@ static const int kInneractiveErrorNoInventory = 1;
     
     self.nativeAd.adConfig.fullscreenVideoOrientationMode = InneractiveVideoFullscreenOrientationModeMaskAll; // is default;
     
+    self.nativeAd.adConfig.nativeAdContentType = IaNativeAdContentTypeImage;
+    
     [[InneractiveAdSDK sharedInstance] loadAd:self.nativeAd];
 }
 
