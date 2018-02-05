@@ -38,7 +38,6 @@
     "StoreKit",
     "WebKit"
   ],
-  "static_framework": true,
   "default_subspecs": "MoPubSDK",
   "subspecs": [
     {
