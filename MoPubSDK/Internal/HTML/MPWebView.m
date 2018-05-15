@@ -26,6 +26,8 @@ static BOOL gForceWKWebView = NO;
 @property (weak, nonatomic) WKWebView *wkWebView;
 @property (weak, nonatomic) UIWebView *uiWebView;
 
+@property (strong, nonatomic) NSArray<NSLayoutConstraint *> *wkWebViewLayoutConstraints;
+
 @property (nonatomic, assign) BOOL hasMovedToWindow;
 
 @end
@@ -103,7 +105,6 @@ static BOOL gForceWKWebView = NO;
         self.uiWebView = uiWebView;
 
         [self addSubview:webView];
-        [self setAutolayoutConstraintsForWebView:webView];
     }
 
     webView.backgroundColor = [UIColor clearColor];
@@ -113,6 +114,9 @@ static BOOL gForceWKWebView = NO;
 
     // set default scalesPageToFit
     self.scalesPageToFit = NO;
+
+    // set default `shouldConformToSafeArea`
+    self.shouldConformToSafeArea = NO;
 
     // configure like the old MPAdWebView
     self.backgroundColor = [UIColor clearColor];
@@ -168,7 +172,7 @@ static UIView *gOffscreenView = nil;
         && [self.wkWebView.superview isEqual:gOffscreenView]) {
         self.wkWebView.frame = self.bounds;
         [self addSubview:self.wkWebView];
-        [self setAutolayoutConstraintsForWebView:self.wkWebView];
+        [self constrainWebViewShouldUseSafeArea:self.shouldConformToSafeArea];
         self.hasMovedToWindow = YES;
 
         // Don't keep OffscreenView if we don't need it; it can always be re-allocated again later
@@ -187,19 +191,21 @@ static UIView *gOffscreenView = nil;
     // If it's attached to self, the autoresizing mask should come into play & this is just extra work.
     if ([keyPath isEqualToString:kMoPubFrameKeyPathString]
         && [self.wkWebView.superview isEqual:gOffscreenView]) {
-        self.wkWebView.frame = self.bounds;
-    }
-}
-
-- (void)setAutolayoutConstraintsForWebView:(UIView *)webView {
-    if (@available(iOS 9.0, *)) {
-        webView.translatesAutoresizingMaskIntoConstraints = NO;
-        [NSLayoutConstraint activateConstraints:@[
-                                                  [webView.topAnchor constraintEqualToAnchor:self.topAnchor],
-                                                  [webView.leadingAnchor constraintEqualToAnchor:self.leadingAnchor],
-                                                  [webView.trailingAnchor constraintEqualToAnchor:self.trailingAnchor],
-                                                  [webView.bottomAnchor constraintEqualToAnchor:self.bottomAnchor],
-                                                  ]];
+        if (@available(iOS 11.0, *)) {
+            // In iOS 11, WKWebView loads web view contents into the safe area only unless `viewport-fit=cover` is
+            // included in the page's viewport tag. Also, as of iOS 11, it appears WKWebView does not redraw page
+            // contents to match the safe area of a new position after being moved. As a result, making `wkWebView`'s
+            // X/Y coordinates (0,0) can introduce an issue on iPhone X where banners do not load inside of
+            // `wkWebView`'s bounds, even if the banner is moved into the safe area after loading.
+            //
+            // To skirt around these problems, always put `wkWebView` into the safe area when using iOS 11 or later.
+            self.wkWebView.frame = CGRectMake(gOffscreenView.safeAreaInsets.left,
+                                              gOffscreenView.safeAreaInsets.top,
+                                              CGRectGetWidth(self.bounds),
+                                              CGRectGetHeight(self.bounds));
+        } else {
+            self.wkWebView.frame = self.bounds;
+        }
     }
 }
 
@@ -216,6 +222,42 @@ static UIView *gOffscreenView = nil;
     [self.wkWebView removeFromSuperview];
     // Deallocate OffscreenView if needed
     [self cleanUpOffscreenView];
+}
+
+- (void)setShouldConformToSafeArea:(BOOL)shouldConformToSafeArea {
+    _shouldConformToSafeArea = shouldConformToSafeArea;
+
+    if (self.hasMovedToWindow) {
+        [self constrainWebViewShouldUseSafeArea:shouldConformToSafeArea];
+    }
+}
+
+- (void)constrainWebViewShouldUseSafeArea:(BOOL)shouldUseSafeArea {
+    if (@available(iOS 11.0, *)) {
+        self.wkWebView.translatesAutoresizingMaskIntoConstraints = NO;
+
+        if (self.wkWebViewLayoutConstraints) {
+            [NSLayoutConstraint deactivateConstraints:self.wkWebViewLayoutConstraints];
+        }
+
+        if (shouldUseSafeArea) {
+            self.wkWebViewLayoutConstraints = @[
+                                                [self.wkWebView.topAnchor constraintEqualToAnchor:self.safeAreaLayoutGuide.topAnchor],
+                                                [self.wkWebView.leadingAnchor constraintEqualToAnchor:self.safeAreaLayoutGuide.leadingAnchor],
+                                                [self.wkWebView.trailingAnchor constraintEqualToAnchor:self.safeAreaLayoutGuide.trailingAnchor],
+                                                [self.wkWebView.bottomAnchor constraintEqualToAnchor:self.safeAreaLayoutGuide.bottomAnchor],
+                                                ];
+        } else {
+            self.wkWebViewLayoutConstraints = @[
+                                                [self.wkWebView.topAnchor constraintEqualToAnchor:self.topAnchor],
+                                                [self.wkWebView.leadingAnchor constraintEqualToAnchor:self.leadingAnchor],
+                                                [self.wkWebView.trailingAnchor constraintEqualToAnchor:self.trailingAnchor],
+                                                [self.wkWebView.bottomAnchor constraintEqualToAnchor:self.bottomAnchor],
+                                                ];
+        }
+
+        [NSLayoutConstraint activateConstraints:self.wkWebViewLayoutConstraints];
+    }
 }
 
 - (BOOL)isLoading {
