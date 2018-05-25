@@ -64,7 +64,9 @@ NSString * const kMoPubSDKNetworkDomain = @"MoPubSDKNetworkDomain";
     MPHTTPNetworkTaskData * taskData = [[MPHTTPNetworkTaskData alloc] initWithResponseHandler:responseHandler errorHandler:errorHandler shouldRedirectWithNewRequest:shouldRedirectWithNewRequest];
 
     // Update the sessions.
-    MPHTTPNetworkSession.sharedInstance.sessions[task] = taskData;
+    @synchronized(MPHTTPNetworkSession.sharedInstance) {
+        MPHTTPNetworkSession.sharedInstance.sessions[task] = taskData;
+    }
 
     return task;
 }
@@ -112,7 +114,10 @@ didReceiveResponse:(NSURLResponse *)response
           dataTask:(NSURLSessionDataTask *)dataTask
     didReceiveData:(NSData *)data {
     // Retrieve the task data.
-    MPHTTPNetworkTaskData * taskData = self.sessions[dataTask];
+    MPHTTPNetworkTaskData * taskData;
+    @synchronized(self) {
+        taskData = self.sessions[dataTask];
+    }
     if (taskData == nil) {
         return;
     }
@@ -131,7 +136,10 @@ willPerformHTTPRedirection:(NSHTTPURLResponse *)response
         newRequest:(NSURLRequest *)request
  completionHandler:(void (^)(NSURLRequest * _Nullable))completionHandler {
     // Retrieve the task data.
-    MPHTTPNetworkTaskData * taskData = self.sessions[task];
+    MPHTTPNetworkTaskData * taskData;
+    @synchronized(self) {
+        taskData = self.sessions[task];
+    }
     if (taskData == nil) {
         completionHandler(request);
         return;
@@ -152,14 +160,20 @@ willPerformHTTPRedirection:(NSHTTPURLResponse *)response
               task:(NSURLSessionTask *)task
 didCompleteWithError:(nullable NSError *)error {
     // Retrieve the task data.
-    MPHTTPNetworkTaskData * taskData = self.sessions[task];
+    MPHTTPNetworkTaskData * taskData;
+    @synchronized(self) {
+        taskData = self.sessions[task];
+    }
+    
     if (taskData == nil) {
         return;
     }
 
     // Remove the task data from the currently in flight sessions.
-    self.sessions[task] = nil;
-
+    @synchronized(self) {
+        self.sessions[task] = nil;
+    }
+        
     // Validate that response is not an error.
     if (error != nil) {
         MPLogError(@"Network request failed with: %@", error.localizedDescription);
