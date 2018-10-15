@@ -1,7 +1,7 @@
 {
   "name": "mopub-ios-sdk",
   "module_name": "MoPub",
-  "version": "5.0.0",
+  "version": "5.4.0",
   "license": {
     "type": "New BSD",
     "file": "LICENSE"
@@ -15,11 +15,11 @@
   "social_media_url": "http://twitter.com/mopub",
   "source": {
     "git": "https://github.com/mopub/mopub-ios-sdk.git",
-    "tag": "5.0.0"
+    "tag": "5.4.0"
   },
   "requires_arc": true,
   "platforms": {
-    "ios": "8.0"
+    "ios": "9.0"
   },
   "frameworks": [
     "AVFoundation",
