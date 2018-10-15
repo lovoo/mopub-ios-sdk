@@ -1,8 +1,9 @@
 //
 //  MPInterstitialViewController.m
-//  MoPub
 //
-//  Copyright (c) 2012 MoPub, Inc. All rights reserved.
+//  Copyright 2018 Twitter, Inc.
+//  Licensed under the MoPub SDK License Agreement
+//  http://www.mopub.com/legal/sdk-license-agreement/
 //
 
 #import "MPInterstitialViewController.h"
@@ -43,6 +44,10 @@ static NSString * const kCloseButtonXImageName = @"MPCloseButtonX.png";
     [super viewDidLoad];
 
     self.view.backgroundColor = [UIColor blackColor];
+}
+
+- (BOOL)prefersHomeIndicatorAutoHidden {
+    return YES;
 }
 
 #pragma mark - Public

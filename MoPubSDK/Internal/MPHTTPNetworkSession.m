@@ -1,13 +1,16 @@
 //
 //  MPHTTPNetworkSession.m
 //
-//  Copyright © 2018 MoPub. All rights reserved.
+//  Copyright 2018 Twitter, Inc.
+//  Licensed under the MoPub SDK License Agreement
+//  http://www.mopub.com/legal/sdk-license-agreement/
 //
 
 #import "MPError.h"
 #import "MPHTTPNetworkTaskData.h"
 #import "MPHTTPNetworkSession.h"
 #import "MPLogging.h"
+#import "NSError+MPAdditions.h"
 
 // Macros for dispatching asynchronously to the main queue
 #define safe_block(block, ...) block ? block(__VA_ARGS__) : nil
@@ -22,7 +25,11 @@ NSString * const kMoPubSDKNetworkDomain = @"MoPubSDKNetworkDomain";
 
 @interface MPHTTPNetworkSession() <NSURLSessionDataDelegate>
 @property (nonatomic, strong) NSURLSession * sharedSession;
+
+// Access to `NSMutableDictionary` is not thread-safe by default, so we will gate access
+// to it using GCD to allow concurrent reads, but synchronous writes.
 @property (nonatomic, strong) NSMutableDictionary<NSURLSessionTask *, MPHTTPNetworkTaskData *> * sessions;
+@property (nonatomic, strong) dispatch_queue_t sessionsQueue;
 @end
 
 @implementation MPHTTPNetworkSession
@@ -46,9 +53,61 @@ NSString * const kMoPubSDKNetworkDomain = @"MoPubSDKNetworkDomain";
 
         // Dictionary of all sessions currently in flight.
         _sessions = [NSMutableDictionary dictionary];
+        _sessionsQueue = dispatch_queue_create("com.mopub.mopub-ios-sdk.mphttpnetworksession.queue", DISPATCH_QUEUE_CONCURRENT);
     }
 
     return self;
+}
+
+#pragma mark - Session Access
+
+- (void)setSessionData:(MPHTTPNetworkTaskData *)data forTask:(NSURLSessionTask *)task {
+    dispatch_barrier_sync(self.sessionsQueue, ^{
+        self.sessions[task] = data;
+    });
+}
+
+/**
+ Retrieves the task data for the specified task. Accessing the data is thread
+ safe, but mutating the data is not thread safe.
+ @param task Task which needs a data retrieval.
+ @return The task data or @c nil
+ */
+- (MPHTTPNetworkTaskData *)sessionDataForTask:(NSURLSessionTask *)task {
+    __block MPHTTPNetworkTaskData * data = nil;
+    dispatch_sync(self.sessionsQueue, ^{
+        data = self.sessions[task];
+    });
+
+    return data;
+}
+
+/**
+ Appends additional data to the @c responseData field of @c MPHTTPNetworkTaskData in
+ a thread safe manner.
+ @param data New data to append.
+ @param task Task to append the data to.
+ */
+- (void)appendData:(NSData *)data toSessionDataForTask:(NSURLSessionTask *)task {
+    // No data to append or task.
+    if (data == nil || task == nil) {
+        return;
+    }
+
+    dispatch_barrier_sync(self.sessionsQueue, ^{
+        // Do nothing if there is no task data entry.
+        MPHTTPNetworkTaskData * taskData = self.sessions[task];
+        if (taskData == nil) {
+            return;
+        }
+
+        // Append the new data to the task.
+        if (taskData.responseData == nil) {
+            taskData.responseData = [NSMutableData data];
+        }
+
+        [taskData.responseData appendData:data];
+    });
 }
 
 #pragma mark - Manual Start Tasks
@@ -64,9 +123,7 @@ NSString * const kMoPubSDKNetworkDomain = @"MoPubSDKNetworkDomain";
     MPHTTPNetworkTaskData * taskData = [[MPHTTPNetworkTaskData alloc] initWithResponseHandler:responseHandler errorHandler:errorHandler shouldRedirectWithNewRequest:shouldRedirectWithNewRequest];
 
     // Update the sessions.
-    @synchronized(MPHTTPNetworkSession.sharedInstance) {
-        MPHTTPNetworkSession.sharedInstance.sessions[task] = taskData;
-    }
+    [MPHTTPNetworkSession.sharedInstance setSessionData:taskData forTask:task];
 
     return task;
 }
@@ -113,21 +170,9 @@ didReceiveResponse:(NSURLResponse *)response
 - (void)URLSession:(NSURLSession *)session
           dataTask:(NSURLSessionDataTask *)dataTask
     didReceiveData:(NSData *)data {
-    // Retrieve the task data.
-    MPHTTPNetworkTaskData * taskData;
-    @synchronized(self) {
-        taskData = self.sessions[dataTask];
-    }
-    if (taskData == nil) {
-        return;
-    }
 
     // Append the new data to the task.
-    if (taskData.responseData == nil) {
-        taskData.responseData = [NSMutableData data];
-    }
-
-    [taskData.responseData appendData:data];
+    [self appendData:data toSessionDataForTask:dataTask];
 }
 
 - (void)URLSession:(NSURLSession *)session
@@ -136,10 +181,7 @@ willPerformHTTPRedirection:(NSHTTPURLResponse *)response
         newRequest:(NSURLRequest *)request
  completionHandler:(void (^)(NSURLRequest * _Nullable))completionHandler {
     // Retrieve the task data.
-    MPHTTPNetworkTaskData * taskData;
-    @synchronized(self) {
-        taskData = self.sessions[task];
-    }
+    MPHTTPNetworkTaskData * taskData = [self sessionDataForTask:task];
     if (taskData == nil) {
         completionHandler(request);
         return;
@@ -160,20 +202,14 @@ willPerformHTTPRedirection:(NSHTTPURLResponse *)response
               task:(NSURLSessionTask *)task
 didCompleteWithError:(nullable NSError *)error {
     // Retrieve the task data.
-    MPHTTPNetworkTaskData * taskData;
-    @synchronized(self) {
-        taskData = self.sessions[task];
-    }
-    
+    MPHTTPNetworkTaskData * taskData = [self sessionDataForTask:task];
     if (taskData == nil) {
         return;
     }
 
     // Remove the task data from the currently in flight sessions.
-    @synchronized(self) {
-        self.sessions[task] = nil;
-    }
-        
+    [self setSessionData:nil forTask:task];
+
     // Validate that response is not an error.
     if (error != nil) {
         MPLogError(@"Network request failed with: %@", error.localizedDescription);
@@ -187,6 +223,15 @@ didCompleteWithError:(nullable NSError *)error {
         NSError * notHttpResponseError = [NSError errorWithDomain:kMoPubSDKNetworkDomain code:MOPUBErrorUnexpectedNetworkResponse userInfo:@{ NSLocalizedDescriptionKey: @"response is not of type NSHTTPURLResponse" }];
         MPLogError(@"Network request failed with: %@", notHttpResponseError.localizedDescription);
         safe_block(taskData.errorHandler, notHttpResponseError);
+        return;
+    }
+
+    // Validate response code is not an error (>= 400)
+    // See https://en.wikipedia.org/wiki/List_of_HTTP_status_codes for all valid status codes.
+    if (httpResponse.statusCode >= 400) {
+        NSError * not200ResponseError = [NSError networkErrorWithHTTPStatusCode:httpResponse.statusCode];
+        MPLogError(@"Network request failed with: %@", not200ResponseError.localizedDescription);
+        safe_block(taskData.errorHandler, not200ResponseError);
         return;
     }
 

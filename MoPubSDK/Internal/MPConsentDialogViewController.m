@@ -1,8 +1,9 @@
 //
 //  MPConsentDialogViewController.m
-//  MoPubSDK
 //
-//  Copyright © 2018 MoPub. All rights reserved.
+//  Copyright 2018 Twitter, Inc.
+//  Licensed under the MoPub SDK License Agreement
+//  http://www.mopub.com/legal/sdk-license-agreement/
 //
 
 #import "MPAPIEndpoints.h"
@@ -82,7 +83,13 @@ static NSTimeInterval const kCloseButtonFadeInAfterSeconds = 10.0;
 }
 
 - (void)closeConsentDialog {
-    [self dismissViewControllerAnimated:YES completion:nil];
+    [self dismissViewControllerAnimated:YES completion:^{
+        // Intentionally holding a strong reference to @c self here so that the view controller doesn't deallocate
+        // before the delegate method is called.
+        if ([self.delegate respondsToSelector:@selector(consentDialogViewControllerDidDismiss:)]) {
+            [self.delegate consentDialogViewControllerDidDismiss:self];
+        }
+    }];
 }
 
 - (void)setUpWebView {
@@ -193,7 +200,7 @@ static NSTimeInterval const kCloseButtonFadeInAfterSeconds = 10.0;
 
 - (BOOL)webView:(MPWebView *)webView shouldStartLoadWithRequest:(NSURLRequest *)request navigationType:(UIWebViewNavigationType)navigationType {
     BOOL requestIsMoPubScheme = [request.URL.scheme isEqualToString:kMoPubScheme];
-    BOOL requestIsMoPubHost = [request.URL.host isEqualToString:MOPUB_BASE_HOSTNAME];
+    BOOL requestIsMoPubHost = [request.URL.host isEqualToString:MPAPIEndpoints.baseHostname];
 
     // Kick to Safari if the URL is not of MoPub scheme or hostname
     if (!requestIsMoPubScheme && !requestIsMoPubHost) {
