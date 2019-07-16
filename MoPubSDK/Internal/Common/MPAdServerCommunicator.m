@@ -17,6 +17,7 @@
 #import "MPError.h"
 #import "MPHTTPNetworkSession.h"
 #import "MPLogging.h"
+#import "MPRateLimitManager.h"
 #import "MPURLRequest.h"
 
 // Multiple response JSON fields
@@ -32,6 +33,8 @@ static NSString * const kAdResonsesContentKey = @"content";
 @property (nonatomic, strong) NSURLSessionTask * task;
 @property (nonatomic, strong) NSDictionary *responseHeaders;
 @property (nonatomic) NSArray *topLevelJsonKeys;
+
+@property (nonatomic, readonly) BOOL isRateLimited;
 
 @end
 
@@ -75,6 +78,11 @@ static NSString * const kAdResonsesContentKey = @"content";
 
 - (void)loadURL:(NSURL *)URL
 {
+    if (self.isRateLimited) {
+        [self didFailWithError:[NSError tooManyRequests]];
+        return;
+    }
+
     [self cancel];
 
     // Delete any cookies previous creatives have set before starting the load
@@ -144,6 +152,10 @@ static NSString * const kAdResonsesContentKey = @"content";
     }
 }
 
+- (BOOL)isRateLimited {
+    return [[MPRateLimitManager sharedInstance] isRateLimitedForAdUnitId:[self.delegate adUnitIDForAdServerCommunicator:self]];
+}
+
 - (void)failLoadForSDKInit {
     NSError *error = [NSError adLoadFailedBecauseSdkNotInitialized];
     MPLogEvent([MPLogEvent error:error message:nil]);
@@ -182,8 +194,7 @@ static NSString * const kAdResonsesContentKey = @"content";
     if (error) {
         NSError * parseError = [NSError adResponseFailedToParseWithError:error];
         MPLogEvent([MPLogEvent error:parseError message:nil]);
-        self.loading = NO;
-        [self.delegate communicatorDidFailWithError:parseError];
+        [self didFailWithError:parseError];
         return;
     }
 
@@ -198,8 +209,7 @@ static NSString * const kAdResonsesContentKey = @"content";
     if (responses == nil) {
         NSError * noResponsesError = [NSError adResponsesNotFound];
         MPLogEvent([MPLogEvent error:noResponsesError message:nil]);
-        self.loading = NO;
-        [self.delegate communicatorDidFailWithError:noResponsesError];
+        [self didFailWithError:noResponsesError];
         return;
     }
 
@@ -215,14 +225,20 @@ static NSString * const kAdResonsesContentKey = @"content";
             continue;
         }
 
-        MPAdConfiguration * configuration = [[MPAdConfiguration alloc] initWithMetadata:metadata data:content];
+        MPAdConfiguration * configuration = [[MPAdConfiguration alloc] initWithMetadata:metadata data:content adType:[self.delegate adTypeForAdServerCommunicator:self]];
         if (configuration != nil) {
             [configurations addObject:configuration];
-        }
-        else {
+        } else {
             MPLogInfo(@"Failed to generate configuration from\nmetadata:\n%@\nbody:\n%@", metadata, responseJson[kAdResonsesContentKey]);
         }
     }
+
+    // Set up rate limiting (has no effect if backoffMs is 0)
+    NSInteger backoffMs = [json[kBackoffMsKey] integerValue];
+    NSString * backoffReason = json[kBackoffReasonKey];
+    [[MPRateLimitManager sharedInstance] setRateLimitTimerWithAdUnitId:[self.delegate adUnitIDForAdServerCommunicator:self]
+                                                          milliseconds:backoffMs
+                                                                reason:backoffReason];
 
     self.loading = NO;
     [self.delegate communicatorDidReceiveAdConfigurations:configurations];
@@ -265,7 +281,7 @@ static NSString * const kAdResonsesContentKey = @"content";
     NSNumber * debugLoggingEnabled = json[kEnableDebugLogging];
     if (debugLoggingEnabled != nil && [debugLoggingEnabled boolValue]) {
         MPLogInfo(@"Debug logging enabled");
-        MPLogging.consoleLogLevel = MPLogLevelDebug;
+        MPLogging.consoleLogLevel = MPBLogLevelDebug;
 
         json[kEnableDebugLogging] = nil;
     }

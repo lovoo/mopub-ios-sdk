@@ -34,4 +34,12 @@
     if (self.didTrackImpression != nil) { self.didTrackImpression(); }
 }
 
+- (void)adWillExpandForAdapter:(MPBaseBannerAdapter *)adapter {
+    if (self.willExpand != nil) { self.willExpand(); }
+}
+
+- (void)adDidCollapseForAdapter:(MPBaseBannerAdapter *)adapter {
+    if (self.didCollapse != nil) { self.didCollapse(); }
+}
+
 @end

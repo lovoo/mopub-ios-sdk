@@ -11,7 +11,7 @@ import Foundation
 /**
  Provides a mapping of ad format to a view controller that can render it.
  */
-enum AdFormat: String {
+enum AdFormat: String, CaseIterable {
     /**
      320x50 banner
      */

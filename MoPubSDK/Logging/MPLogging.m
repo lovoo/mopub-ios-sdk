@@ -16,21 +16,21 @@ NSString * const kMPWarmingUpErrorLogFormatWithAdUnitID = @"Ad unit %@ is curren
 
 #pragma mark - Class Properties
 
-+ (MPLogLevel)consoleLogLevel {
++ (MPBLogLevel)consoleLogLevel {
     return MPLogManager.sharedInstance.consoleLogLevel;
 }
 
-+ (void)setConsoleLogLevel:(MPLogLevel)level {
++ (void)setConsoleLogLevel:(MPBLogLevel)level {
     MPLogManager.sharedInstance.consoleLogLevel = level;
 }
 
 #pragma mark - Class Methods
 
-+ (void)addLogger:(id<MPLogger>)logger {
++ (void)addLogger:(id<MPBLogger>)logger {
     [MPLogManager.sharedInstance addLogger:logger];
 }
 
-+ (void)removeLogger:(id<MPLogger>)logger {
++ (void)removeLogger:(id<MPBLogger>)logger {
     [MPLogManager.sharedInstance removeLogger:logger];
 }
 

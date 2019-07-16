@@ -42,13 +42,6 @@
 
 @implementation MPInterstitialAdManager
 
-@synthesize loading = _loading;
-@synthesize ready = _ready;
-@synthesize delegate = _delegate;
-@synthesize communicator = _communicator;
-@synthesize adapter = _adapter;
-@synthesize requestingConfiguration = _requestingConfiguration;
-
 - (id)initWithDelegate:(id<MPInterstitialAdManagerDelegate>)delegate
 {
     self = [super init];
@@ -167,13 +160,6 @@
         return;
     }
 
-    if (configuration.adType != MPAdTypeInterstitial) {
-        MPLogInfo(@"Could not load ad: interstitial object received a non-interstitial ad unit ID.");
-        self.loading = NO;
-        [self.delegate manager:self didFailToLoadInterstitialWithError:[NSError errorWithCode:MOPUBErrorAdapterInvalid]];
-        return;
-    }
-
     [self setUpAdapterWithConfiguration:configuration];
 }
 
@@ -201,6 +187,14 @@
     MPBaseInterstitialAdapter *adapter = [[MPInterstitialCustomEventAdapter alloc] initWithDelegate:self];
     self.adapter = adapter;
     [self.adapter _getAdWithConfiguration:configuration targeting:self.targeting];
+}
+
+- (MPAdType)adTypeForAdServerCommunicator:(MPAdServerCommunicator *)adServerCommunicator {
+    return MPAdTypeFullscreen;
+}
+
+- (NSString *)adUnitIDForAdServerCommunicator:(MPAdServerCommunicator *)adServerCommunicator {
+    return [self.delegate adUnitId];
 }
 
 #pragma mark - MPInterstitialAdapterDelegate
@@ -292,6 +286,10 @@
 - (void)interstitialWillLeaveApplicationForAdapter:(MPBaseInterstitialAdapter *)adapter
 {
     MPLogAdEvent(MPLogEvent.adWillLeaveApplication, self.delegate.interstitialAdController.adUnitId);
+}
+
+- (void)interstitialDidReceiveImpressionEventForAdapter:(MPBaseInterstitialAdapter *)adapter {
+    [self.delegate interstitialAdManager:self didReceiveImpressionEventWithImpressionData:self.requestingConfiguration.impressionData];
 }
 
 @end

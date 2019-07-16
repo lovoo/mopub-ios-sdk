@@ -40,9 +40,22 @@ CGFloat MPStatusBarHeight() {
     return (width < height) ? width : height;
 }
 
-CGRect MPApplicationFrame()
+CGRect MPApplicationFrame(BOOL includeSafeAreaInsets)
 {
     CGRect frame = MPScreenBounds();
+
+    if (@available(iOS 11.0, *)) {
+        if (includeSafeAreaInsets) {
+            // Safe area insets include the status bar offset.
+            UIEdgeInsets safeInsets = UIApplication.sharedApplication.keyWindow.safeAreaInsets;
+            frame.origin.x = safeInsets.left;
+            frame.size.width -= (safeInsets.left + safeInsets.right);
+            frame.origin.y = safeInsets.top;
+            frame.size.height -= (safeInsets.top + safeInsets.bottom);
+
+            return frame;
+        }
+    }
 
     frame.origin.y += MPStatusBarHeight();
     frame.size.height -= MPStatusBarHeight();

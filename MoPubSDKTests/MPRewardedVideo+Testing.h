@@ -21,4 +21,6 @@
 + (void)loadRewardedVideoAdWithAdUnitID:(NSString *)adUnitID withTestConfiguration:(MPAdConfiguration *)config;
 + (MPRewardedVideoAdManager *)adManagerForAdUnitId:(NSString *)adUnitID;
 
+- (void)rewardedVideoAdManager:(MPRewardedVideoAdManager *)manager didReceiveImpressionEventWithImpressionData:(MPImpressionData *)impressionData;
+
 @end

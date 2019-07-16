@@ -15,6 +15,9 @@
 #import "MPMockAdServerCommunicator.h"
 #import "MPURL.h"
 #import "NSURLComponents+Testing.h"
+#import "MPImpressionTrackedNotification.h"
+
+static NSTimeInterval const kTestTimeout = 0.5;
 
 @interface MPAdViewTests : XCTestCase
 @property (nonatomic, strong) MPAdView * adView;
@@ -34,11 +37,6 @@
     });
 }
 
-- (void)tearDown {
-    // Put teardown code here. This method is called after the invocation of each test method in the class.
-    [super tearDown];
-}
-
 #pragma mark - Viewability
 
 - (void)testViewabilityQueryParameter {
@@ -56,5 +54,68 @@
     XCTAssertTrue([viewabilityValue isEqualToString:@"1"]);
 }
 
+#pragma mark - Impression Level Revenue Data
+
+- (void)testImpressionNotificationWithImpressionData {
+    XCTestExpectation * notificationExpectation = [self expectationWithDescription:@"Wait for impression notification"];
+    NSString * testAdUnitId = @"FAKE_AD_UNIT_ID";
+
+    // Make notification handler
+    id notificationObserver = [[NSNotificationCenter defaultCenter] addObserverForName:kMPImpressionTrackedNotification
+                                                                                object:nil
+                                                                                 queue:[NSOperationQueue mainQueue]
+                                                                            usingBlock:^(NSNotification * note){
+                                                                                [notificationExpectation fulfill];
+
+                                                                                MPImpressionData * impressionData = note.userInfo[kMPImpressionTrackedInfoImpressionDataKey];
+                                                                                XCTAssert([note.object isEqual:self.adView]);
+                                                                                XCTAssertNotNil(impressionData);
+                                                                                XCTAssert([self.adView.adUnitId isEqualToString:note.userInfo[kMPImpressionTrackedInfoAdUnitIDKey]]);
+                                                                                XCTAssert([impressionData.adUnitID isEqualToString:testAdUnitId]);
+                                                                            }];
+
+    MPImpressionData * impressionData = [[MPImpressionData alloc] initWithDictionary:@{
+                                                                                       kImpressionDataAdUnitIDKey: testAdUnitId
+                                                                                       }];
+
+    // Simulate impression
+    [self.adView impressionDidFireWithImpressionData:impressionData];
+
+    [self waitForExpectationsWithTimeout:kTestTimeout handler:^(NSError * _Nullable error) {
+        if (error != nil) {
+            XCTFail(@"Timed out");
+        }
+    }];
+
+    [[NSNotificationCenter defaultCenter] removeObserver:notificationObserver];
+}
+
+- (void)testImpressionNotificationWithNoImpressionData {
+    XCTestExpectation * notificationExpectation = [self expectationWithDescription:@"Wait for impression notification"];
+
+    // Make notification handler
+    id notificationObserver = [[NSNotificationCenter defaultCenter] addObserverForName:kMPImpressionTrackedNotification
+                                                                                object:nil
+                                                                                 queue:[NSOperationQueue mainQueue]
+                                                                            usingBlock:^(NSNotification * note){
+                                                                                [notificationExpectation fulfill];
+
+                                                                                MPImpressionData * impressionData = note.userInfo[kMPImpressionTrackedInfoImpressionDataKey];
+                                                                                XCTAssert([note.object isEqual:self.adView]);
+                                                                                XCTAssertNil(impressionData);
+                                                                                XCTAssert([self.adView.adUnitId isEqualToString:note.userInfo[kMPImpressionTrackedInfoAdUnitIDKey]]);
+                                                                            }];
+
+    // Simulate impression
+    [self.adView impressionDidFireWithImpressionData:nil];
+
+    [self waitForExpectationsWithTimeout:kTestTimeout handler:^(NSError * _Nullable error) {
+        if (error != nil) {
+            XCTFail(@"Timed out");
+        }
+    }];
+
+    [[NSNotificationCenter defaultCenter] removeObserver:notificationObserver];
+}
 
 @end

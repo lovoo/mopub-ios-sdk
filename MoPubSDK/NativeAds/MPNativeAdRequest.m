@@ -242,6 +242,8 @@ static NSString * const kNativeAdErrorDomain = @"com.mopub.NativeAd";
     self.remainingConfigurations = nil;
 
     adObject.renderer = self.customEventRenderer;
+    adObject.configuration = self.adConfiguration;
+    adObject.adUnitID = self.adUnitIdentifier;
 
     if ([(id)adObject.adAdapter respondsToSelector:@selector(setAdConfiguration:)]) {
         [(id)adObject.adAdapter performSelector:@selector(setAdConfiguration:) withObject:self.adConfiguration];
@@ -305,6 +307,14 @@ static NSString * const kNativeAdErrorDomain = @"com.mopub.NativeAd";
     MPLogDebug(@"Error: Couldn't retrieve an ad from MoPub. Message: %@", error);
 
     [self completeAdRequestWithAdObject:nil error:MPNativeAdNSErrorForNetworkConnectionError()];
+}
+
+- (MPAdType)adTypeForAdServerCommunicator:(MPAdServerCommunicator *)adServerCommunicator {
+    return MPAdTypeInline;
+}
+
+- (NSString *)adUnitIDForAdServerCommunicator:(MPAdServerCommunicator *)adServerCommunicator {
+    return self.adUnitIdentifier;
 }
 
 #pragma mark - <MPNativeCustomEventDelegate>

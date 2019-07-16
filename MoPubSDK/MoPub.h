@@ -14,6 +14,7 @@
 #import "MPAdImpressionTimer.h"
 #import "MPAdTargeting.h"
 #import "MPAdView.h"
+#import "MPAdViewDelegate.h"
 #import "MPBannerCustomEvent.h"
 #import "MPBannerCustomEventDelegate.h"
 #import "MPBaseAdapterConfiguration.h"
@@ -25,12 +26,17 @@
 #import "MPError.h"
 #import "MPGlobal.h"
 #import "MPIdentityProvider.h"
+#import "MPImpressionData.h"
+#import "MPImpressionTrackedNotification.h"
 #import "MPInterstitialAdController.h"
+#import "MPInterstitialAdControllerDelegate.h"
 #import "MPInterstitialCustomEvent.h"
 #import "MPInterstitialCustomEventDelegate.h"
 #import "MPLogging.h"
-#import "MPLogLevel.h"
+#import "MPBLogLevel.h"
 #import "MPMediationSettingsProtocol.h"
+#import "MPMoPubAd.h"
+#import "MPMoPubAdPlacer.h"
 #import "MPMoPubConfiguration.h"
 #import "MPRealTimeTimer.h"
 #import "MPRewardedVideo.h"
@@ -53,7 +59,9 @@
 #import "MPNativeView.h"
 #import "MPNativeAdUtils.h"
 #import "MPCollectionViewAdPlacer.h"
+#import "MPCollectionViewAdPlacerDelegate.h"
 #import "MPTableViewAdPlacer.h"
+#import "MPTableViewAdPlacerDelegate.h"
 #import "MPClientAdPositioning.h"
 #import "MPServerAdPositioning.h"
 #import "MPNativeAdDelegate.h"
@@ -67,6 +75,7 @@
 #import "MOPUBNativeVideoAdRenderer.h"
 #import "MPNativeAdRenderingImageLoader.h"
 #import "MPStreamAdPlacer.h"
+#import "MPStreamAdPlacerDelegate.h"
 #endif
 
 // Import these frameworks for module support.
@@ -130,9 +139,9 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, assign) BOOL forceWKWebView;
 
 /**
- * SDK log level. The default value is `MPLogLevelNone`.
+ * SDK log level. The default value is `MPBLogLevelNone`.
  */
-@property (nonatomic, assign) MPLogLevel logLevel __attribute((deprecated("Use the MPMoPubConfiguration.loggingLevel instead.")));
+@property (nonatomic, assign) MPBLogLevel logLevel __attribute((deprecated("Use the MPMoPubConfiguration.loggingLevel instead.")));
 
 /**
  * Initializes the MoPub SDK asynchronously on a background thread.
@@ -181,6 +190,18 @@ NS_ASSUME_NONNULL_BEGIN
 @end
 
 @interface MoPub (Mediation)
+
+/**
+ * Retrieves the adapter configuration for the specified class.
+ * @param className The classname of the adapter configuration instance to retrieve.
+ * @return The adapter configuration if available; otherwise @c nil.
+ */
+- (id<MPAdapterConfiguration> _Nullable)adapterConfigurationNamed:(NSString *)className;
+
+/**
+ Retrieves the available adapter configuration class names.
+ */
+- (NSArray<NSString *> * _Nullable)availableAdapterClassNames;
 
 /**
  * Clears all currently cached mediated networks.

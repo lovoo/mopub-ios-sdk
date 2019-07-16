@@ -242,6 +242,14 @@
     [self.delegate rewardedVideoDidFailToLoadForAdManager:self error:error];
 }
 
+- (MPAdType)adTypeForAdServerCommunicator:(MPAdServerCommunicator *)adServerCommunicator {
+    return MPAdTypeFullscreen;
+}
+
+- (NSString *)adUnitIDForAdServerCommunicator:(MPAdServerCommunicator *)adServerCommunicator {
+    return self.adUnitID;
+}
+
 #pragma mark - MPRewardedVideoAdapterDelegate
 
 - (id<MPMediationSettingsProtocol>)instanceMediationSettingsForClass:(Class)aClass
@@ -350,6 +358,10 @@
 {
     MPLogAdEvent(MPLogEvent.adWillPresentModal, self.adUnitID);
     [self.delegate rewardedVideoDidReceiveTapEventForAdManager:self];
+}
+
+- (void)rewardedVideoDidReceiveImpressionEventForAdapter:(MPRewardedVideoAdapter *)adapter {
+    [self.delegate rewardedVideoAdManager:self didReceiveImpressionEventWithImpressionData:self.configuration.impressionData];
 }
 
 - (void)rewardedVideoWillLeaveApplicationForAdapter:(MPRewardedVideoAdapter *)adapter

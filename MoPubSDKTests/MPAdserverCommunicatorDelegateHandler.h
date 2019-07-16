@@ -13,5 +13,7 @@
 
 @property (nonatomic, copy) void (^communicatorDidReceiveAdConfigurations)(NSArray<MPAdConfiguration *> *configurations);
 @property (nonatomic, copy) void (^communicatorDidFailWithError)(NSError *error);
+@property (nonatomic, copy) MPAdType (^adTypeForAdServerCommunicator)(MPAdServerCommunicator *adServerCommunicator);
+@property (nonatomic, copy) NSString * (^adUnitIdForAdServerCommunicator)(MPAdServerCommunicator *adServerCommunicator);
 
 @end

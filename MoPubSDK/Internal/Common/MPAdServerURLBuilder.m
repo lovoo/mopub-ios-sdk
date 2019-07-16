@@ -21,6 +21,7 @@
 #import "MPIdentityProvider.h"
 #import "MPLogging.h"
 #import "MPMediationManager.h"
+#import "MPRateLimitManager.h"
 #import "MPReachabilityManager.h"
 #import "MPViewabilityTracker.h"
 #import "NSString+MPAdditions.h"
@@ -203,6 +204,8 @@ static NSInteger const kAdSequenceNone = -1;
     queryParams[kUserDataKeywordsKey]           = [self userDataKeywordsValue:userDataKeywords];
     queryParams[kViewabilityStatusKey]          = [self viewabilityStatusValue:viewability];
     queryParams[kAdvancedBiddingKey]            = [self advancedBiddingValue];
+    queryParams[kBackoffMsKey]                  = [self backoffMillisecondsValueForAdUnitID:adUnitID];
+    queryParams[kBackoffReasonKey]              = [[MPRateLimitManager sharedInstance] lastRateLimitReasonForAdUnitId:adUnitID];
     [queryParams addEntriesFromDictionary:[self locationInformationDictionary:location]];
 
     return [self URLWithEndpointPath:MOPUB_API_PATH_AD_REQUEST postData:queryParams];
@@ -341,6 +344,11 @@ static NSInteger const kAdSequenceNone = -1;
     }
 
     return [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding];
+}
+
++ (NSString *)backoffMillisecondsValueForAdUnitID:(NSString *)adUnitID {
+    NSUInteger lastRateLimitWaitTimeMilliseconds = [[MPRateLimitManager sharedInstance] lastRateLimitMillisecondsForAdUnitId:adUnitID];
+    return lastRateLimitWaitTimeMilliseconds > 0 ? [NSString stringWithFormat:@"%@", @(lastRateLimitWaitTimeMilliseconds)] : nil;
 }
 
 + (NSDictionary *)adapterInformation {

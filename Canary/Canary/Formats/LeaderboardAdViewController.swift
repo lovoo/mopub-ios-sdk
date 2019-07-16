@@ -37,6 +37,11 @@ class LeaderboardAdViewController: AdTableViewController {
         
         // Invoke the super class to finish loading the view.
         super.viewDidLoad()
+        
+        // Fix the leaderboard height so that Auto Layout will correctly resize the table header.
+        if let header = tableView.tableHeaderView {
+            header.heightAnchor.constraint(equalToConstant: MOPUB_LEADERBOARD_SIZE.height).isActive = true
+        }
     }
 }
 

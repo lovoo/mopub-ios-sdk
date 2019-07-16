@@ -77,12 +77,12 @@
     return [MPWebView isForceWKWebView];
 }
 
-- (void)setLogLevel:(MPLogLevel)level
+- (void)setLogLevel:(MPBLogLevel)level
 {
     MPLogging.consoleLogLevel = level;
 }
 
-- (MPLogLevel)logLevel
+- (MPBLogLevel)logLevel
 {
     return MPLogging.consoleLogLevel;
 }
@@ -208,6 +208,18 @@
     NSPredicate * predicate = [NSPredicate predicateWithFormat:@"self isKindOfClass: %@", classToFind];
     NSArray * adapters = [MPMediationManager.sharedManager.adapters.allValues filteredArrayUsingPredicate:predicate];
     return adapters.firstObject;
+}
+
+- (NSArray<NSString *> * _Nullable)availableAdapterClassNames {
+    NSMutableArray<NSString *> * adapterClassNames = [NSMutableArray arrayWithCapacity:MPMediationManager.sharedManager.adapters.count];
+    [MPMediationManager.sharedManager.adapters.allValues enumerateObjectsUsingBlock:^(id<MPAdapterConfiguration>  _Nonnull adapter, NSUInteger idx, BOOL * _Nonnull stop) {
+        NSString * className = NSStringFromClass(adapter.class);
+        if (className != nil) {
+            [adapterClassNames addObject:className];
+        }
+    }];
+
+    return adapterClassNames;
 }
 
 - (void)clearCachedNetworks {

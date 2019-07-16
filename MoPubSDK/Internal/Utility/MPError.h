@@ -31,9 +31,11 @@ typedef enum {
     MOPUBErrorInvalidCustomEventClass,
     MOPUBErrorJSONSerializationFailed,
     MOPUBErrorUnableToParseAdResponse,
+    MOPUBErrorConsentDialogAlreadyShowing,
     MOPUBErrorNoConsentDialogLoaded,
     MOPUBErrorAdapterFailedToLoadAd,
     MOPUBErrorFullScreenAdAlreadyOnScreen,
+    MOPUBErrorTooManyRequests,
 } MOPUBErrorCode;
 
 @interface NSError (MoPub)
@@ -60,5 +62,10 @@ typedef enum {
 @end
 
 @interface NSError (Consent)
++ (instancetype)consentDialogAlreadyShowing;
 + (instancetype)noConsentDialogLoaded;
+@end
+
+@interface NSError (RateLimit)
++ (instancetype)tooManyRequests;
 @end

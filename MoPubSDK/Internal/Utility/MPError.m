@@ -80,8 +80,18 @@ NSString * const kNSErrorDomain = @"com.mopub.iossdk";
 
 @implementation NSError (Consent)
 
++ (instancetype)consentDialogAlreadyShowing {
+    return [NSError errorWithCode:MOPUBErrorConsentDialogAlreadyShowing localizedDescription:@"Consent dialog is already being presented modally."];
+}
+
 + (instancetype)noConsentDialogLoaded {
     return [NSError errorWithCode:MOPUBErrorNoConsentDialogLoaded localizedDescription:@"Consent dialog has not been loaded."];
 }
 
+@end
+
+@implementation NSError (RateLimit)
++ (instancetype)tooManyRequests {
+    return [NSError errorWithCode:MOPUBErrorTooManyRequests localizedDescription:@"Could not perform ad request because too many requests have been sent to the server."];
+}
 @end

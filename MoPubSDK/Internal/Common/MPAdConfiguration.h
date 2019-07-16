@@ -8,15 +8,14 @@
 
 #import <Foundation/Foundation.h>
 #import "MPGlobal.h"
+#import "MPImpressionData.h"
 
 @class MPRewardedVideoReward;
 
-enum {
-    MPAdTypeUnknown = -1,
-    MPAdTypeBanner = 0,
-    MPAdTypeInterstitial = 1
+typedef NS_ENUM(NSUInteger, MPAdType) {
+    MPAdTypeInline,
+    MPAdTypeFullscreen
 };
-typedef NSUInteger MPAdType;
 
 typedef NS_ENUM(NSUInteger, MPAfterLoadResult) {
     MPAfterLoadResultMissingAdapter,
@@ -53,6 +52,7 @@ extern NSString * const kRewardedVideoCompletionUrlMetadataKey;
 extern NSString * const kRewardedCurrenciesMetadataKey;
 extern NSString * const kRewardedPlayableDurationMetadataKey;
 extern NSString * const kRewardedPlayableRewardOnClickMetadataKey;
+extern NSString * const kImpressionDataMetadataKey;
 
 extern NSString * const kInterstitialAdTypeMetadataKey;
 extern NSString * const kOrientationTypeMetadataKey;
@@ -110,13 +110,17 @@ extern NSString * const kBannerImpressionMinPixelMetadataKey;
 @property (nonatomic, assign) NSTimeInterval rewardedPlayableDuration;
 @property (nonatomic, assign) BOOL rewardedPlayableShouldRewardOnClick;
 @property (nonatomic, copy) NSString *advancedBidPayload;
+@property (nonatomic, strong) MPImpressionData * impressionData;
 
 // viewable impression tracking experiment
 @property (nonatomic) NSTimeInterval impressionMinVisibleTimeInSec;
 @property (nonatomic) CGFloat impressionMinVisiblePixels;
 @property (nonatomic) BOOL visibleImpressionTrackingEnabled;
 
-- (id)initWithMetadata:(NSDictionary *)metadata data:(NSData *)data;
+- (instancetype)initWithMetadata:(NSDictionary *)metadata data:(NSData *)data adType:(MPAdType)adType;
+
+// Default @c init is unavailable
+- (instancetype)init NS_UNAVAILABLE;
 
 - (BOOL)hasPreferredSize;
 - (NSString *)adResponseHTMLString;

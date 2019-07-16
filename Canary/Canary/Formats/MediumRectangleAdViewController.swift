@@ -37,6 +37,11 @@ class MediumRectangleAdViewController: AdTableViewController {
         
         // Invoke the super class to finish loading the view.
         super.viewDidLoad()
+        
+        // Fix the medium rectangle height so that Auto Layout will correctly resize the table header.
+        if let header = tableView.tableHeaderView {
+            header.heightAnchor.constraint(equalToConstant: MOPUB_MEDIUM_RECT_SIZE.height).isActive = true
+        }
     }
 }
 

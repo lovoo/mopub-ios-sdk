@@ -13,13 +13,18 @@
 #import "MPAdServerKeys.h"
 #import "MPConsentManager+Testing.h"
 #import "MPError.h"
+#import "MPRateLimitManager.h"
 
 static NSTimeInterval const kTimeoutTime = 0.5;
+static NSUInteger const kDefaultRateLimitTimeMs = 400;
+static NSString * const kDefaultRateLimitReason = @"Reason";
 
 // Constants are from `MPAdServerCommunicator.m`
 static NSString * const kAdResponsesKey = @"ad-responses";
 static NSString * const kAdResonsesMetadataKey = @"metadata";
 static NSString * const kAdResonsesContentKey = @"content";
+
+static NSString * const kIsWhitelistedUserDefaultsKey = @"com.mopub.mopub-ios-sdk.is.whitelisted";
 
 @interface MPAdServerCommunicatorTests : XCTestCase
 
@@ -343,6 +348,7 @@ static NSString * const kAdResonsesContentKey = @"content";
 
 - (void)testParseInvalidateConsent {
     // Initially set consent state to consented
+    [NSUserDefaults.standardUserDefaults setBool:YES forKey:kIsWhitelistedUserDefaultsKey];
     [MPConsentManager.sharedManager grantConsent];
     XCTAssert(MPConsentManager.sharedManager.currentStatus == MPConsentStatusConsented);
 
@@ -381,6 +387,7 @@ static NSString * const kAdResonsesContentKey = @"content";
 
 - (void)testParseReacquireConsent {
     // Initially set consent state to consented
+    [NSUserDefaults.standardUserDefaults setBool:YES forKey:kIsWhitelistedUserDefaultsKey];
     [MPConsentManager.sharedManager grantConsent];
     XCTAssert(MPConsentManager.sharedManager.currentStatus == MPConsentStatusConsented);
     XCTAssertFalse(MPConsentManager.sharedManager.isConsentNeeded);
@@ -421,6 +428,7 @@ static NSString * const kAdResonsesContentKey = @"content";
 
 - (void)testParseForceExplicitNoConsent {
     // Initially set consent state to consented
+    [NSUserDefaults.standardUserDefaults setBool:YES forKey:kIsWhitelistedUserDefaultsKey];
     [MPConsentManager.sharedManager grantConsent];
     XCTAssert(MPConsentManager.sharedManager.currentStatus == MPConsentStatusConsented);
 
@@ -497,6 +505,7 @@ static NSString * const kAdResonsesContentKey = @"content";
 
 - (void)testConsentForceExplicitNoTakesPriorityOverInvalidateConsent {
     // Initially set consent state to consented
+    [NSUserDefaults.standardUserDefaults setBool:YES forKey:kIsWhitelistedUserDefaultsKey];
     [MPConsentManager.sharedManager grantConsent];
     XCTAssert(MPConsentManager.sharedManager.currentStatus == MPConsentStatusConsented);
 
@@ -536,6 +545,7 @@ static NSString * const kAdResonsesContentKey = @"content";
 
 - (void)testConsentForceExplicitNoDoesNothingWhenMalformed {
     // Initially set consent state to consented
+    [NSUserDefaults.standardUserDefaults setBool:YES forKey:kIsWhitelistedUserDefaultsKey];
     [MPConsentManager.sharedManager grantConsent];
     XCTAssert(MPConsentManager.sharedManager.currentStatus == MPConsentStatusConsented);
 
@@ -574,6 +584,7 @@ static NSString * const kAdResonsesContentKey = @"content";
 
 - (void)testConsentInvalidateConsentDoesNothingWhenMalformed {
     // Initially set consent state to consented
+    [NSUserDefaults.standardUserDefaults setBool:YES forKey:kIsWhitelistedUserDefaultsKey];
     [MPConsentManager.sharedManager grantConsent];
     XCTAssert(MPConsentManager.sharedManager.currentStatus == MPConsentStatusConsented);
 
@@ -608,6 +619,285 @@ static NSString * const kAdResonsesContentKey = @"content";
 
     // Verify that consent has not changed
     XCTAssert(MPConsentManager.sharedManager.currentStatus == MPConsentStatusConsented);
+}
+
+#pragma mark - Rate Limiting Tests
+
+- (void)testRateLimitTimerSuccessfullySetOnClearResponseWithBackoffKeyWithoutReason {
+    NSDictionary *  responseDataDict = @{
+                                         kBackoffMsKey: @(kDefaultRateLimitTimeMs),
+                                         kAdResponsesKey: @[ @{
+                                                   kAdResonsesMetadataKey: @{
+                                                          @"x-adtype": @"clear",
+                                                          @"x-backfill": @"clear",
+                                                          @"x-refreshtime": @(30),
+                                                          },
+                                                   kAdResonsesContentKey: @""
+                                                   }, ]
+                                         };
+    NSData * jsonData = [NSJSONSerialization dataWithJSONObject:responseDataDict
+                                                        options:0
+                                                          error:nil];
+
+    XCTestExpectation * waitForRateLimit = [self expectationWithDescription:@"Wait for rate limit to end"];
+    XCTestExpectation * waitForDelegate = [self expectationWithDescription:@"Wait for failure delegate"];
+
+    __block BOOL didFail = NO;
+    __block NSError * didFailError = nil;
+
+    self.communicatorDelegateHandler.communicatorDidFailWithError = ^(NSError * error){
+        didFail = YES;
+        didFailError = error;
+
+        [waitForDelegate fulfill];
+    };
+
+    self.communicatorDelegateHandler.adUnitIdForAdServerCommunicator = ^(MPAdServerCommunicator * communicator){
+        return @"testRateLimitTimerSuccessfullySetOnClearResponseWithBackoffKeyWithoutReason";
+    };
+
+    // Load data (set rate limit timer)
+    [self.communicator didFinishLoadingWithData:jsonData];
+
+    // Attempt URL request (see if rate limit timer blocks it)
+    [self.communicator loadURL:[NSURL URLWithString:@"https://google.com"]];
+
+    BOOL isRateLimited = self.communicator.isRateLimited;
+
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(kDefaultRateLimitTimeMs * NSEC_PER_MSEC)), dispatch_get_main_queue(), ^{
+        [waitForRateLimit fulfill];
+
+        // Did the rate limit timer get set
+        XCTAssertTrue(isRateLimited);
+        XCTAssertEqual(kDefaultRateLimitTimeMs, [[MPRateLimitManager sharedInstance] lastRateLimitMillisecondsForAdUnitId:self.communicatorDelegateHandler.adUnitIdForAdServerCommunicator(nil)]);
+        XCTAssertNil([[MPRateLimitManager sharedInstance] lastRateLimitReasonForAdUnitId:self.communicatorDelegateHandler.adUnitIdForAdServerCommunicator(nil)]);
+
+        // Did the attempt at a request fail
+        XCTAssertTrue(didFail);
+        XCTAssertEqual(didFailError.code, MOPUBErrorTooManyRequests);
+    });
+
+    [self waitForExpectations:@[waitForRateLimit, waitForDelegate] timeout:kTimeoutTime];
+}
+
+- (void)testRateLimitTimerSuccessfullySetOnClearResponseWithBackoffKeyWithReason {
+    NSDictionary *  responseDataDict = @{
+                                         kBackoffMsKey: @(kDefaultRateLimitTimeMs),
+                                         kBackoffReasonKey: kDefaultRateLimitReason,
+                                         kAdResponsesKey: @[ @{
+                                                                 kAdResonsesMetadataKey: @{
+                                                                         @"x-adtype": @"clear",
+                                                                         @"x-backfill": @"clear",
+                                                                         @"x-refreshtime": @(30),
+                                                                         },
+                                                                 kAdResonsesContentKey: @""
+                                                                 }, ]
+                                         };
+    NSData * jsonData = [NSJSONSerialization dataWithJSONObject:responseDataDict
+                                                        options:0
+                                                          error:nil];
+
+    XCTestExpectation * waitForRateLimit = [self expectationWithDescription:@"Wait for rate limit to end"];
+    XCTestExpectation * waitForDelegate = [self expectationWithDescription:@"Wait for failure delegate"];
+
+    __block BOOL didFail = NO;
+    __block NSError * didFailError = nil;
+
+    self.communicatorDelegateHandler.communicatorDidFailWithError = ^(NSError * error){
+        didFail = YES;
+        didFailError = error;
+
+        [waitForDelegate fulfill];
+    };
+
+    self.communicatorDelegateHandler.adUnitIdForAdServerCommunicator = ^(MPAdServerCommunicator * communicator){
+        return @"testRateLimitTimerSuccessfullySetOnClearResponseWithBackoffKeyWithReason";
+    };
+
+    // Load data (set rate limit timer)
+    [self.communicator didFinishLoadingWithData:jsonData];
+
+    // Attempt URL request (see if rate limit timer blocks it)
+    [self.communicator loadURL:[NSURL URLWithString:@"https://google.com"]];
+
+    BOOL isRateLimited = self.communicator.isRateLimited;
+
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(kDefaultRateLimitTimeMs * NSEC_PER_MSEC)), dispatch_get_main_queue(), ^{
+        [waitForRateLimit fulfill];
+
+        // Did the rate limit timer get set
+        XCTAssertTrue(isRateLimited);
+        XCTAssertEqual(kDefaultRateLimitTimeMs, [[MPRateLimitManager sharedInstance] lastRateLimitMillisecondsForAdUnitId:self.communicatorDelegateHandler.adUnitIdForAdServerCommunicator(nil)]);
+        XCTAssert([kDefaultRateLimitReason isEqualToString:[[MPRateLimitManager sharedInstance] lastRateLimitReasonForAdUnitId:self.communicatorDelegateHandler.adUnitIdForAdServerCommunicator(nil)]]);
+
+        // Did the attempt at a request fail
+        XCTAssertTrue(didFail);
+        XCTAssertEqual(didFailError.code, MOPUBErrorTooManyRequests);
+    });
+
+    [self waitForExpectations:@[waitForRateLimit, waitForDelegate] timeout:kTimeoutTime];
+}
+
+- (void)testRateLimitTimerIsNotSetOnClearResponseWithNoBackoffKey {
+    NSDictionary *responseDataDict = @{
+                                       kAdResponsesKey: @[ @{
+                                                               kAdResonsesMetadataKey: @{
+                                                                       @"x-adtype": @"clear",
+                                                                       @"x-backfill": @"clear",
+                                                                       @"x-refreshtime": @(30),
+                                                                       },
+                                                               kAdResonsesContentKey: @""
+                                                               }, ]
+                                       };
+    NSData *jsonData = [NSJSONSerialization dataWithJSONObject:responseDataDict
+                                                       options:0
+                                                         error:nil];
+
+    self.communicatorDelegateHandler.adUnitIdForAdServerCommunicator = ^(MPAdServerCommunicator * communicator){
+        return @"testRateLimitTimerIsNotSetOnClearResponseWithNoBackoffKey";
+    };
+
+    [self.communicator didFinishLoadingWithData:jsonData];
+
+    XCTAssertFalse(self.communicator.isRateLimited);
+    XCTAssertEqual(0, [[MPRateLimitManager sharedInstance] lastRateLimitMillisecondsForAdUnitId:self.communicatorDelegateHandler.adUnitIdForAdServerCommunicator(nil)]);
+    XCTAssertNil([[MPRateLimitManager sharedInstance] lastRateLimitReasonForAdUnitId:self.communicatorDelegateHandler.adUnitIdForAdServerCommunicator(nil)]);
+}
+
+- (void)testRateLimitTimerIsSetOnMraidResponseWithReason {
+    NSDictionary *responseDataDict = @{
+                                       kBackoffMsKey: @(kDefaultRateLimitTimeMs),
+                                       kBackoffReasonKey: kDefaultRateLimitReason,
+                                       kAdResponsesKey: @[ @{
+                                                               kAdResonsesMetadataKey: @{
+                                                                       @"x-adtype": @"mraid",
+                                                                       },
+                                                               kAdResonsesContentKey: @""
+                                                               }, ]
+                                       };
+    NSData *jsonData = [NSJSONSerialization dataWithJSONObject:responseDataDict
+                                                       options:0
+                                                         error:nil];
+
+    XCTestExpectation * waitForRateLimit = [self expectationWithDescription:@"Wait for rate limit to end"];
+    XCTestExpectation * waitForDelegate = [self expectationWithDescription:@"Wait for failure delegate"];
+
+    __block BOOL didFail = NO;
+    __block NSError * didFailError = nil;
+
+    self.communicatorDelegateHandler.communicatorDidFailWithError = ^(NSError * error){
+        didFail = YES;
+        didFailError = error;
+
+        [waitForDelegate fulfill];
+    };
+
+    self.communicatorDelegateHandler.adUnitIdForAdServerCommunicator = ^(MPAdServerCommunicator * communicator){
+        return @"testRateLimitTimerIsSetOnMraidResponseWithReason";
+    };
+
+    // Load data (set rate limit timer)
+    [self.communicator didFinishLoadingWithData:jsonData];
+
+    // Attempt URL request (see if rate limit timer blocks it)
+    [self.communicator loadURL:[NSURL URLWithString:@"https://google.com"]];
+
+    BOOL isRateLimited = self.communicator.isRateLimited;
+
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(kDefaultRateLimitTimeMs * NSEC_PER_MSEC)), dispatch_get_main_queue(), ^{
+        [waitForRateLimit fulfill];
+
+        // Did the rate limit timer get set
+        XCTAssertTrue(isRateLimited);
+        XCTAssertEqual(kDefaultRateLimitTimeMs, [[MPRateLimitManager sharedInstance] lastRateLimitMillisecondsForAdUnitId:self.communicatorDelegateHandler.adUnitIdForAdServerCommunicator(nil)]);
+        XCTAssert([kDefaultRateLimitReason isEqualToString:[[MPRateLimitManager sharedInstance] lastRateLimitReasonForAdUnitId:self.communicatorDelegateHandler.adUnitIdForAdServerCommunicator(nil)]]);
+
+        // Did the attempt at a request fail
+        XCTAssertTrue(didFail);
+        XCTAssertEqual(didFailError.code, MOPUBErrorTooManyRequests);
+    });
+
+    [self waitForExpectations:@[waitForRateLimit, waitForDelegate] timeout:kTimeoutTime];
+}
+
+- (void)testRateLimitTimerIsSetOnMraidResponseWithoutReason {
+    NSDictionary *responseDataDict = @{
+                                       kBackoffMsKey: @(kDefaultRateLimitTimeMs),
+                                       kAdResponsesKey: @[ @{
+                                                               kAdResonsesMetadataKey: @{
+                                                                       @"x-adtype": @"mraid",
+                                                                       },
+                                                               kAdResonsesContentKey: @""
+                                                               }, ]
+                                       };
+    NSData *jsonData = [NSJSONSerialization dataWithJSONObject:responseDataDict
+                                                       options:0
+                                                         error:nil];
+
+    XCTestExpectation * waitForRateLimit = [self expectationWithDescription:@"Wait for rate limit to end"];
+    XCTestExpectation * waitForDelegate = [self expectationWithDescription:@"Wait for failure delegate"];
+
+    __block BOOL didFail = NO;
+    __block NSError * didFailError = nil;
+
+    self.communicatorDelegateHandler.communicatorDidFailWithError = ^(NSError * error){
+        didFail = YES;
+        didFailError = error;
+
+        [waitForDelegate fulfill];
+    };
+
+    self.communicatorDelegateHandler.adUnitIdForAdServerCommunicator = ^(MPAdServerCommunicator * communicator){
+        return @"testRateLimitTimerIsSetOnMraidResponseWithoutReason";
+    };
+
+    // Load data (set rate limit timer)
+    [self.communicator didFinishLoadingWithData:jsonData];
+
+    // Attempt URL request (see if rate limit timer blocks it)
+    [self.communicator loadURL:[NSURL URLWithString:@"https://google.com"]];
+
+    BOOL isRateLimited = self.communicator.isRateLimited;
+
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(kDefaultRateLimitTimeMs * NSEC_PER_MSEC)), dispatch_get_main_queue(), ^{
+        [waitForRateLimit fulfill];
+
+        // Did the rate limit timer get set
+        XCTAssertTrue(isRateLimited);
+        XCTAssertEqual(kDefaultRateLimitTimeMs, [[MPRateLimitManager sharedInstance] lastRateLimitMillisecondsForAdUnitId:self.communicatorDelegateHandler.adUnitIdForAdServerCommunicator(nil)]);
+        XCTAssertNil([[MPRateLimitManager sharedInstance] lastRateLimitReasonForAdUnitId:self.communicatorDelegateHandler.adUnitIdForAdServerCommunicator(nil)]);
+
+        // Did the attempt at a request fail
+        XCTAssertTrue(didFail);
+        XCTAssertEqual(didFailError.code, MOPUBErrorTooManyRequests);
+    });
+
+    [self waitForExpectations:@[waitForRateLimit, waitForDelegate] timeout:kTimeoutTime];
+}
+
+- (void)testRateLimitTimerIsNotSetOnMraidResponseWithNoBackoffKey {
+    NSDictionary *responseDataDict = @{
+                                       kAdResponsesKey: @[ @{
+                                                               kAdResonsesMetadataKey: @{
+                                                                       @"x-adtype": @"mraid",
+                                                                       },
+                                                               kAdResonsesContentKey: @""
+                                                               }, ]
+                                       };
+
+    self.communicatorDelegateHandler.adUnitIdForAdServerCommunicator = ^(MPAdServerCommunicator * communicator){
+        return @"testRateLimitTimerIsNotSetOnMraidResponseWithNoBackoffKey";
+    };
+
+    NSData *jsonData = [NSJSONSerialization dataWithJSONObject:responseDataDict
+                                                       options:0
+                                                         error:nil];
+
+    [self.communicator didFinishLoadingWithData:jsonData];
+
+    XCTAssertFalse(self.communicator.isRateLimited);
+    XCTAssertEqual(0, [[MPRateLimitManager sharedInstance] lastRateLimitMillisecondsForAdUnitId:self.communicatorDelegateHandler.adUnitIdForAdServerCommunicator(nil)]);
+    XCTAssertNil([[MPRateLimitManager sharedInstance] lastRateLimitReasonForAdUnitId:self.communicatorDelegateHandler.adUnitIdForAdServerCommunicator(nil)]);
 }
 
 @end

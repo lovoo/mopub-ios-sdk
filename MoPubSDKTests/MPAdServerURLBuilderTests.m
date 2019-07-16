@@ -19,6 +19,7 @@
 #import "NSString+MPConsentStatus.h"
 #import "NSString+MPAdditions.h"
 #import "NSURLComponents+Testing.h"
+#import "MPRateLimitManager.h"
 
 static NSString * const kTestAdUnitId = @"";
 static NSString * const kTestKeywords = @"";
@@ -213,6 +214,47 @@ static NSString * const kLastChangedMsStorageKey                 = @"com.mopub.m
 
     NSString * value = [queryItemPair componentsSeparatedByString:@"="][1];
     return value;
+}
+
+#pragma mark - Rate Limiting
+
+- (void)testFilledReasonWithNonZeroRateLimitValue {
+    [[MPRateLimitManager sharedInstance] setRateLimitTimerWithAdUnitId:@"fake_adunit" milliseconds:10 reason:@"Reason"];
+
+    MPURL * url = [MPAdServerURLBuilder URLWithAdUnitID:@"fake_adunit"
+                                               keywords:nil
+                                       userDataKeywords:nil
+                                               location:nil];
+
+    NSNumber * value = [url numberForPOSTDataKey:kBackoffMsKey];
+    XCTAssertEqual([value integerValue], 10);
+    XCTAssert([[url stringForPOSTDataKey:kBackoffReasonKey] isEqualToString:@"Reason"]);
+}
+
+- (void)testZeroRateLimitValueDoesntShow {
+    [[MPRateLimitManager sharedInstance] setRateLimitTimerWithAdUnitId:@"fake_adunit" milliseconds:0 reason:nil];
+
+    MPURL * url = [MPAdServerURLBuilder URLWithAdUnitID:@"fake_adunit"
+                                               keywords:nil
+                                       userDataKeywords:nil
+                                               location:nil];
+
+    NSNumber * value = [url numberForPOSTDataKey:kBackoffMsKey];
+    XCTAssertNil(value);
+    XCTAssertNil([url stringForPOSTDataKey:kBackoffReasonKey]);
+}
+
+- (void)testNilReasonWithNonZeroRateLimitValue {
+    [[MPRateLimitManager sharedInstance] setRateLimitTimerWithAdUnitId:@"fake_adunit" milliseconds:10 reason:nil];
+
+    MPURL * url = [MPAdServerURLBuilder URLWithAdUnitID:@"fake_adunit"
+                                               keywords:nil
+                                       userDataKeywords:nil
+                                               location:nil];
+
+    NSNumber * value = [url numberForPOSTDataKey:kBackoffMsKey];
+    XCTAssertEqual([value integerValue], 10);
+    XCTAssertNil([url stringForPOSTDataKey:kBackoffReasonKey]);
 }
 
 @end
