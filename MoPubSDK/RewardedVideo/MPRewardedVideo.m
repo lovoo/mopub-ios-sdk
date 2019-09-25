@@ -8,7 +8,6 @@
 
 #import "MPRewardedVideo.h"
 #import "MPAdTargeting.h"
-#import "MPGlobal.h"
 #import "MPImpressionTrackedNotification.h"
 #import "MPLogging.h"
 #import "MPRewardedVideoAdManager.h"
@@ -120,7 +119,7 @@ static MPRewardedVideo *gSharedInstance = nil;
     adManager.mediationSettings = mediationSettings;
 
     // Ad targeting options
-    MPAdTargeting * targeting = [MPAdTargeting targetingWithCreativeSafeSize:MPApplicationFrame(YES).size];
+    MPAdTargeting * targeting = [[MPAdTargeting alloc] init];
     targeting.keywords = keywords;
     targeting.location = location;
     targeting.localExtras = localExtras;

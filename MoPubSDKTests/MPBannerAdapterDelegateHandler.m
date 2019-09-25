@@ -30,7 +30,7 @@
     if (self.willLeaveApplication != nil) { self.willLeaveApplication(); }
 }
 
-- (void)adapterDidTrackImpressionForAd:(MPBaseBannerAdapter *)adapter {
+- (void)adapter:(MPBaseBannerAdapter *)adapter didTrackImpressionForAd:(UIView *)ad {
     if (self.didTrackImpression != nil) { self.didTrackImpression(); }
 }
 

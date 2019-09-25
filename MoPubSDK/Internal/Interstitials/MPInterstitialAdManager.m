@@ -33,7 +33,6 @@
 @property (nonatomic, strong) NSMutableArray<MPAdConfiguration *> *remainingConfigurations;
 @property (nonatomic, assign) NSTimeInterval adapterLoadStartTimestamp;
 @property (nonatomic, strong) MPAdTargeting * targeting;
-@property (nonatomic, strong) NSURL *mostRecentlyLoadedURL;  // ADF-4286: avoid infinite ad reloads
 
 - (void)setUpAdapterWithConfiguration:(MPAdConfiguration *)configuration;
 
@@ -79,7 +78,6 @@
     }
 
     self.loading = YES;
-    self.mostRecentlyLoadedURL = URL;
     [self.communicator loadURL:URL];
 }
 
@@ -92,7 +90,10 @@
         [self.delegate managerDidLoadInterstitial:self];
     } else {
         self.targeting = targeting;
-        [self loadAdWithURL:[MPAdServerURLBuilder URLWithAdUnitID:ID targeting:targeting]];
+        [self loadAdWithURL:[MPAdServerURLBuilder URLWithAdUnitID:ID
+                                                         keywords:targeting.keywords
+                                                 userDataKeywords:targeting.userDataKeywords
+                                                         location:targeting.location]];
     }
 }
 
@@ -170,7 +171,7 @@
     [self.delegate manager:self didFailToLoadInterstitialWithError:error];
 }
 
-- (void)setUpAdapterWithConfiguration:(MPAdConfiguration *)configuration
+- (void)setUpAdapterWithConfiguration:(MPAdConfiguration *)configuration;
 {
     // Notify Ad Server of the adapter load. This is fire and forget.
     [self.communicator sendBeforeLoadUrlWithConfiguration:configuration];
@@ -226,8 +227,7 @@
         [self fetchAdWithConfiguration:self.requestingConfiguration];
     }
     // No more configurations to try. Send new request to Ads server to get more Ads.
-    else if (self.requestingConfiguration.nextURL != nil
-             && [self.requestingConfiguration.nextURL isEqual:self.mostRecentlyLoadedURL] == false) {
+    else if (self.requestingConfiguration.nextURL != nil) {
         self.ready = NO;
         self.loading = NO;
         [self loadAdWithURL:self.requestingConfiguration.nextURL];

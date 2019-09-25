@@ -12,7 +12,6 @@
 #import "MOPUBPlayerViewController.h"
 #import "MPAdDestinationDisplayAgent.h"
 #import "MPCoreInstanceProvider.h"
-#import "MPExtendedHitBoxButton.h"
 #import "MPHTTPNetworkSession.h"
 #import "MPGlobal.h"
 #import "MPLogging.h"
@@ -21,6 +20,7 @@
 #import "MPURLRequest.h"
 #import "MOPUBActivityIndicatorView.h"
 #import "UIView+MPAdditions.h"
+#import "UIButton+MPAdditions.h"
 #import "UIColor+MPAdditions.h"
 
 static CGFloat const kPrivacyIconFullscreenLeftMargin = 16.0f;
@@ -53,9 +53,9 @@ static CGFloat const kStallSpinnerSize = 35.0f;
 @interface MOPUBFullscreenPlayerViewController () <MPAdDestinationDisplayAgentDelegate, MOPUBPlayerViewControllerDelegate>
 
 // UI components
-@property (nonatomic, strong) MPExtendedHitBoxButton *privacyButton;
-@property (nonatomic, strong) MPExtendedHitBoxButton *closeButton;
-@property (nonatomic, strong) MPExtendedHitBoxButton *ctaButton;
+@property (nonatomic) UIButton *privacyButton;
+@property (nonatomic) UIButton *closeButton;
+@property (nonatomic) UIButton *ctaButton;
 @property (nonatomic) MOPUBActivityIndicatorView *stallSpinner;
 @property (nonatomic) UIActivityIndicatorView *playerNotReadySpinner;
 @property (nonatomic) UIView *gradientView;
@@ -89,7 +89,6 @@ static CGFloat const kStallSpinnerSize = 35.0f;
         _overridePrivacyIcon = properties[kAdPrivacyIconImageUrlKey];
         _overridePrivacyIconImage = properties[kAdPrivacyIconUIImageKey];
         _overridePrivacyClickUrl = properties[kAdPrivacyIconClickUrlKey];
-        self.modalPresentationStyle = UIModalPresentationFullScreen;
     }
     return self;
 }
@@ -98,6 +97,7 @@ static CGFloat const kStallSpinnerSize = 35.0f;
 {
     [super viewDidLoad];
 
+    [self setApplicationStatusBarHidden:YES];
     [self.playerController willEnterFullscreen];
 
     self.view.backgroundColor = [UIColor blackColor];
@@ -105,21 +105,21 @@ static CGFloat const kStallSpinnerSize = 35.0f;
 
     [self createAndAddGradientView];
 
-    self.privacyButton = [MPExtendedHitBoxButton buttonWithType:UIButtonTypeCustom];
+    self.privacyButton = [UIButton buttonWithType:UIButtonTypeCustom];
     self.privacyButton.frame = CGRectMake(0, 0, kPrivacyIconSize, kPrivacyIconSize);
     [self setPrivacyIconImageForButton:self.privacyButton];
     [self.privacyButton addTarget:self action:@selector(privacyButtonTapped) forControlEvents:UIControlEventTouchUpInside];
-    self.privacyButton.touchAreaInsets = UIEdgeInsetsMake(kDefaultButtonTouchAreaInsets, kDefaultButtonTouchAreaInsets, kDefaultButtonTouchAreaInsets, kDefaultButtonTouchAreaInsets);
+    self.privacyButton.mp_TouchAreaInsets = UIEdgeInsetsMake(kDefaultButtonTouchAreaInsets, kDefaultButtonTouchAreaInsets, kDefaultButtonTouchAreaInsets, kDefaultButtonTouchAreaInsets);
     [self.view addSubview:self.privacyButton];
 
-    self.closeButton = [MPExtendedHitBoxButton buttonWithType:UIButtonTypeCustom];
+    self.closeButton = [UIButton buttonWithType:UIButtonTypeCustom];
     [self.closeButton setImage:[UIImage imageNamed:MPResourcePathForResource(kCloseButtonImage)] forState:UIControlStateNormal];
     [self.closeButton addTarget:self action:@selector(closeButtonTapped) forControlEvents:UIControlEventTouchUpInside];
-    self.closeButton.touchAreaInsets = UIEdgeInsetsMake(kDefaultButtonTouchAreaInsets, kDefaultButtonTouchAreaInsets, kDefaultButtonTouchAreaInsets, kDefaultButtonTouchAreaInsets);
+    self.closeButton.mp_TouchAreaInsets = UIEdgeInsetsMake(kDefaultButtonTouchAreaInsets, kDefaultButtonTouchAreaInsets, kDefaultButtonTouchAreaInsets, kDefaultButtonTouchAreaInsets);
     [self.closeButton sizeToFit];
     [self.view addSubview:self.closeButton];
 
-    self.ctaButton = [MPExtendedHitBoxButton buttonWithType:UIButtonTypeCustom];
+    self.ctaButton = [UIButton buttonWithType:UIButtonTypeCustom];
     [self.ctaButton setTitle:kCtaButtonTitleText forState:UIControlStateNormal];
     [self.ctaButton setBackgroundColor:[UIColor mp_colorFromHexString:kCtaButtonBackgroundColor alpha:kCtaButtonBackgroundAlpha]];
     [self.ctaButton addTarget:self action:@selector(ctaButtonTapped) forControlEvents:UIControlEventTouchUpInside];
@@ -268,10 +268,8 @@ static CGFloat const kStallSpinnerSize = 35.0f;
 
 - (void)layoutCtaButton
 {
-    CGRect applicationFrame = MPApplicationFrame(YES);
-    BOOL isLandscapeOrientation = applicationFrame.size.width > applicationFrame.size.height;
-
-    if (isLandscapeOrientation) {
+    UIInterfaceOrientation orientation = [UIApplication sharedApplication].statusBarOrientation;
+    if (UIInterfaceOrientationIsLandscape(orientation)) {
         self.ctaButton.mp_x = CGRectGetMaxX(self.playerView.frame) - kCtaButtonTrailingMarginLandscape - CGRectGetWidth(self.ctaButton.bounds);
         self.ctaButton.mp_y = CGRectGetMaxY(self.playerView.frame) - kCtaButtonBottomMarginLandscape - CGRectGetHeight(self.ctaButton.bounds);
     } else {
@@ -402,6 +400,15 @@ static CGFloat const kStallSpinnerSize = 35.0f;
 {
     [self.playerController resume];
 }
+
+#pragma mark - Hidding status bar (pre-iOS 7)
+
+- (void)setApplicationStatusBarHidden:(BOOL)hidden
+{
+    [[UIApplication sharedApplication] mp_preIOS7setApplicationStatusBarHidden:hidden];
+}
+
+#pragma mark - Hidding status bar (iOS 7 and above)
 
 - (BOOL)prefersStatusBarHidden
 {

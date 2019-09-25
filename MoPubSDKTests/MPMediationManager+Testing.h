@@ -8,10 +8,8 @@
 
 #import "MPMediationManager.h"
 
-NS_ASSUME_NONNULL_BEGIN
-
 @interface MPMediationManager (Testing)
-@property (class, nonatomic, copy, nullable) NSString * adapterInformationProvidersFilePath;
+@property (class, nonatomic, copy) NSString * adapterInformationProvidersFilePath;
 @property (nonatomic, strong) NSMutableDictionary<NSString *, id<MPAdapterConfiguration>> * adapters;
 @property (nonatomic, strong, readonly) NSSet<Class<MPAdapterConfiguration>> * certifiedAdapterClasses;
 
@@ -19,5 +17,3 @@ NS_ASSUME_NONNULL_BEGIN
 - (NSDictionary<NSString *, NSString *> *)parametersForAdapter:(id<MPAdapterConfiguration>)adapter
                                          overrideConfiguration:(NSDictionary<NSString *, NSString *> *)configuration;
 @end
-
-NS_ASSUME_NONNULL_END

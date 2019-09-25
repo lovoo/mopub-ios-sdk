@@ -18,7 +18,6 @@
 
 // Expose private methods from `MPAdServerCommunicator`
 - (void)didFinishLoadingWithData:(NSData *)data;
-- (void)didFailWithError:(NSError *)error;
 - (NSArray *)getFlattenJsonResponses:(NSDictionary *)json keys:(NSArray *)keys;
 
 @end

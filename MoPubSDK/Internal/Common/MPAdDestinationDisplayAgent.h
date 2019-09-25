@@ -10,17 +10,21 @@
 #import "MPActivityViewControllerHelper+TweetShare.h"
 #import "MPURLResolver.h"
 #import "MPProgressOverlayView.h"
+#import "MPAdBrowserController.h"
+#import "MPStoreKitProvider.h"
 #import "MOPUBDisplayAgentType.h"
 
 @protocol MPAdDestinationDisplayAgentDelegate;
 
 @interface MPAdDestinationDisplayAgent : NSObject <MPProgressOverlayViewDelegate,
+                                                   MPAdBrowserControllerDelegate,
+                                                   MPSKStoreProductViewControllerDelegate,
                                                    MPActivityViewControllerHelperDelegate>
 
 @property (nonatomic, weak) id<MPAdDestinationDisplayAgentDelegate> delegate;
 
 + (MPAdDestinationDisplayAgent *)agentWithDelegate:(id<MPAdDestinationDisplayAgentDelegate>)delegate;
-+ (BOOL)shouldDisplayContentInApp;
++ (BOOL)shouldUseSafariViewController;
 - (void)displayDestinationForURL:(NSURL *)URL;
 - (void)cancel;
 

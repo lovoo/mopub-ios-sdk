@@ -8,10 +8,6 @@
 
 #import "MRController+Testing.h"
 
-// Suppress warning of accessing private implementation `adjustedFrameForFrame:toFitIntoApplicationSafeArea:`
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wincomplete-implementation"
 @implementation MRController (Testing)
 @dynamic mraidWebView;
 @end
-#pragma clang diagnostic pop

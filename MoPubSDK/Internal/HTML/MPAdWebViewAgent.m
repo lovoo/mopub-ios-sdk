@@ -6,13 +6,13 @@
 //  http://www.mopub.com/legal/sdk-license-agreement/
 //
 
-#import <WebKit/WebKit.h>
 #import "MPAdWebViewAgent.h"
 #import "MPAdConfiguration.h"
 #import "MPGlobal.h"
 #import "MPLogging.h"
 #import "MPAdDestinationDisplayAgent.h"
 #import "NSURL+MPAdditions.h"
+#import "UIWebView+MPAdditions.h"
 #import "MPWebView.h"
 #import "MPCoreInstanceProvider.h"
 #import "MPUserInteractionGestureRecognizer.h"
@@ -27,6 +27,8 @@
 #define NSFoundationVersionNumber_iOS_6_1 993.00
 #endif
 
+#define MPOffscreenWebViewNeedsRenderingWorkaround() (floor(NSFoundationVersionNumber) > NSFoundationVersionNumber_iOS_6_1)
+
 @interface MPAdWebViewAgent () <UIGestureRecognizerDelegate>
 
 @property (nonatomic, strong) MPAdConfiguration *configuration;
@@ -40,14 +42,14 @@
 @property (nonatomic, assign) BOOL didFireClickImpression;
 
 - (void)performActionForMoPubSpecificURL:(NSURL *)URL;
-- (BOOL)shouldIntercept:(NSURL *)URL navigationType:(WKNavigationType)navigationType;
+- (BOOL)shouldIntercept:(NSURL *)URL navigationType:(UIWebViewNavigationType)navigationType;
 - (void)interceptURL:(NSURL *)URL;
 
 @end
 
 @implementation MPAdWebViewAgent
 
-- (id)initWithAdWebViewFrame:(CGRect)frame delegate:(id<MPAdWebViewAgentDelegate>)delegate
+- (id)initWithAdWebViewFrame:(CGRect)frame delegate:(id<MPAdWebViewAgentDelegate>)delegate;
 {
     self = [super init];
     if (self) {
@@ -85,7 +87,7 @@
 
 #pragma mark - <UIGestureRecognizerDelegate>
 
-- (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldRecognizeSimultaneouslyWithGestureRecognizer:(UIGestureRecognizer *)otherGestureRecognizer
+- (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldRecognizeSimultaneouslyWithGestureRecognizer:(UIGestureRecognizer *)otherGestureRecognizer;
 {
     return YES;
 }
@@ -132,6 +134,7 @@
     }
 
     [self.view mp_setScrollable:NO];
+    [self.view disableJavaScriptDialogs];
 
     // Initialize viewability trackers before loading self.view
     [self init3rdPartyViewabilityTrackers];
@@ -208,9 +211,8 @@
 
 #pragma mark - <MPWebViewDelegate>
 
-- (BOOL)webView:(MPWebView *)webView
-shouldStartLoadWithRequest:(NSURLRequest *)request
- navigationType:(WKNavigationType)navigationType
+- (BOOL)webView:(MPWebView *)webView shouldStartLoadWithRequest:(NSURLRequest *)request
+ navigationType:(UIWebViewNavigationType)navigationType
 {
     if (!self.shouldHandleRequests) {
         return NO;
@@ -238,7 +240,7 @@ shouldStartLoadWithRequest:(NSURLRequest *)request
 
 - (void)webViewDidStartLoad:(MPWebView *)webView
 {
-    // no op
+    [self.view disableJavaScriptDialogs];
 }
 
 #pragma mark - MoPub-specific URL handlers
@@ -263,11 +265,13 @@ shouldStartLoadWithRequest:(NSURLRequest *)request
 }
 
 #pragma mark - URL Interception
-- (BOOL)shouldIntercept:(NSURL *)URL navigationType:(WKNavigationType)navigationType
+- (BOOL)shouldIntercept:(NSURL *)URL navigationType:(UIWebViewNavigationType)navigationType
 {
-    if (navigationType == WKNavigationTypeLinkActivated) {
+    if ([URL mp_hasTelephoneScheme] || [URL mp_hasTelephonePromptScheme]) {
         return YES;
-    } else if (navigationType == WKNavigationTypeOther && self.userInteractedWithWebView) {
+    } else if (navigationType == UIWebViewNavigationTypeLinkClicked) {
+        return YES;
+    } else if (navigationType == UIWebViewNavigationTypeOther && self.userInteractedWithWebView) {
         return YES;
     } else {
         return NO;
@@ -319,6 +323,51 @@ shouldStartLoadWithRequest:(NSURLRequest *)request
     self.adAlertManager.targetAdView = self.view;
     self.adAlertManager.location = [self.delegate location];
     [self.adAlertManager beginMonitoringAlerts];
+}
+
+- (void)rotateToOrientation:(UIInterfaceOrientation)orientation
+{
+    [self forceRedraw];
+}
+
+- (void)forceRedraw
+{
+    UIInterfaceOrientation orientation = [[UIApplication sharedApplication] statusBarOrientation];
+    int angle = -1;
+    switch (orientation) {
+        case UIInterfaceOrientationPortrait: angle = 0; break;
+        case UIInterfaceOrientationLandscapeLeft: angle = 90; break;
+        case UIInterfaceOrientationLandscapeRight: angle = -90; break;
+        case UIInterfaceOrientationPortraitUpsideDown: angle = 180; break;
+        default: break;
+    }
+
+    if (angle == -1) return;
+
+    // UIWebView doesn't seem to fire the 'orientationchange' event upon rotation, so we do it here.
+    NSString *orientationEventScript = [NSString stringWithFormat:
+                                        @"window.__defineGetter__('orientation',function(){return %d;});"
+                                        @"(function(){ var evt = document.createEvent('Events');"
+                                        @"evt.initEvent('orientationchange',true,true);window.dispatchEvent(evt);})();",
+                                        angle];
+    [self.view stringByEvaluatingJavaScriptFromString:orientationEventScript];
+
+    // XXX: In iOS 7, off-screen UIWebViews will fail to render certain image creatives.
+    // Specifically, creatives that only contain an <img> tag whose src attribute uses a 302
+    // redirect will not be rendered at all. One workaround is to temporarily change the web view's
+    // internal contentInset property; this seems to force the web view to re-draw.
+    if (MPOffscreenWebViewNeedsRenderingWorkaround()) {
+        if ([self.view respondsToSelector:@selector(scrollView)]) {
+            UIScrollView *scrollView = self.view.scrollView;
+            UIEdgeInsets originalInsets = scrollView.contentInset;
+            UIEdgeInsets newInsets = UIEdgeInsetsMake(originalInsets.top + 1,
+                                                      originalInsets.left,
+                                                      originalInsets.bottom,
+                                                      originalInsets.right);
+            scrollView.contentInset = newInsets;
+            scrollView.contentInset = originalInsets;
+        }
+    }
 }
 
 @end

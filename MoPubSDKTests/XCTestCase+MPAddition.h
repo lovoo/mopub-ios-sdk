@@ -7,12 +7,9 @@
 //
 
 #import <XCTest/XCTest.h>
-#import "MPVASTResponse.h"
 
 @interface XCTestCase (MPAddition)
 
-- (NSData *)dataFromXMLFileNamed:(NSString *)name;
-
-- (MPVASTResponse *)vastResponseFromXMLFile:(NSString *)fileName;
+- (NSData *)dataFromXMLFileNamed:(NSString *)name class:(Class)aClass;
 
 @end

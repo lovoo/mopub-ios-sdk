@@ -80,10 +80,11 @@
     self.configuration.adTimeoutInterval : BANNER_TIMEOUT_INTERVAL;
 
     if (timeInterval > 0) {
-        self.timeoutTimer = [MPTimer timerWithTimeInterval:timeInterval
-                                                    target:self
-                                                  selector:@selector(timeout)
-                                                   repeats:NO];
+        self.timeoutTimer = [[MPCoreInstanceProvider sharedProvider] buildMPTimerWithTimeInterval:timeInterval
+                                                                                       target:self
+                                                                                     selector:@selector(timeout)
+                                                                                      repeats:NO];
+
         [self.timeoutTimer scheduleNow];
     }
 }

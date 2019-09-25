@@ -133,11 +133,6 @@ protocol AdDataSource: class {
     var messages: [AdEvent: String] { get set }
     
     /**
-     Optional ad size used for requesting inline ads. This should be `nil` for non-inline ads.
-     */
-    var requestedAdSize: CGSize? { get set }
-    
-    /**
      Retrieves the display status for the event.
      - Parameter event: Status event.
      - Returns: A tuple containing the status display title, optional message, and highlighted state.

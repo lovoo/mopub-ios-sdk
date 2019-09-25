@@ -10,16 +10,4 @@
 
 @implementation MPAdTargeting
 
-- (instancetype)initWithCreativeSafeSize:(CGSize)size {
-    if (self = [super init]) {
-        self.creativeSafeSize = size;
-    }
-
-    return self;
-}
-
-+ (instancetype)targetingWithCreativeSafeSize:(CGSize)size {
-    return [[MPAdTargeting alloc] initWithCreativeSafeSize:size];
-}
-
 @end

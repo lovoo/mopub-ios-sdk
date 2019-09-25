@@ -63,23 +63,4 @@ extension UserDefaults {
             self[shouldClearCachedNetworksKey] = newValue
         }
     }
-    
-    /**
-     The private `UserDefaults.Key` for accessing `cachedAdUnitId`.
-     */
-    private var cachedAdUnitIdKey: Key<String> {
-        return Key<String>("cachedAdUnitIdKey", defaultValue: "")
-    }
-    
-    /**
-     Cached ad unit ID used for MoPub SDK initialization
-     */
-    var cachedAdUnitId: String {
-        get {
-            return self[cachedAdUnitIdKey]
-        }
-        set {
-            self[cachedAdUnitIdKey] = newValue
-        }
-    }
 }

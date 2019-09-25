@@ -1,5 +1,5 @@
 //
-//  MPAdServerCommunicatorDelegateHandler.h
+//  MPAdserverCommunicatorDelegateHandler.h
 //
 //  Copyright 2018-2019 Twitter, Inc.
 //  Licensed under the MoPub SDK License Agreement
@@ -9,7 +9,7 @@
 #import <Foundation/Foundation.h>
 #import "MPAdServerCommunicator.h"
 
-@interface MPAdServerCommunicatorDelegateHandler : NSObject <MPAdServerCommunicatorDelegate>
+@interface MPAdserverCommunicatorDelegateHandler : NSObject <MPAdServerCommunicatorDelegate>
 
 @property (nonatomic, copy) void (^communicatorDidReceiveAdConfigurations)(NSArray<MPAdConfiguration *> *configurations);
 @property (nonatomic, copy) void (^communicatorDidFailWithError)(NSError *error);

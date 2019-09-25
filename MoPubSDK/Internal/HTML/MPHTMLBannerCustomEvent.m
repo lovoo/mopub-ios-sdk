@@ -21,10 +21,6 @@
 
 @implementation MPHTMLBannerCustomEvent
 
-// Explicitly `@synthesize` here to fix a "-Wobjc-property-synthesis" warning because super class `delegate` is
-// `id<MPBannerCustomEventDelegate>` and this `delegate` is `id<MPPrivateInterstitialCustomEventDelegate>`
-@synthesize delegate;
-
 - (BOOL)enableAutomaticImpressionAndClickTracking
 {
     return NO;
@@ -44,6 +40,11 @@
 - (void)dealloc
 {
     self.bannerAgent.delegate = nil;
+}
+
+- (void)rotateToOrientation:(UIInterfaceOrientation)newOrientation
+{
+    [self.bannerAgent rotateToOrientation:newOrientation];
 }
 
 #pragma mark - MPAdWebViewAgentDelegate

@@ -8,10 +8,6 @@
 
 #import "MPNativeAd+Testing.h"
 
-// Suppress warning of accessing private implementation `trackImpression`
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wincomplete-implementation"
 @implementation MPNativeAd (Testing)
 
 @end
-#pragma clang diagnostic pop

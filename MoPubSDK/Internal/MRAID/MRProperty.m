@@ -121,9 +121,12 @@
 
 + (NSDictionary *)supportedFeatures
 {
+    BOOL supportsSms, supportsTel;
+    supportsSms = supportsTel = [MPCoreInstanceProvider sharedProvider].sharedCarrierInfo[@"carrierName"] != nil;
+
     return [NSDictionary dictionaryWithObjectsAndKeys:
-            [NSNumber numberWithBool:NO], @"sms",
-            [NSNumber numberWithBool:NO], @"tel",
+            [NSNumber numberWithBool:supportsSms], @"sms",
+            [NSNumber numberWithBool:supportsTel], @"tel",
             [NSNumber numberWithBool:NO], @"calendar",
             [NSNumber numberWithBool:NO], @"storePicture",
             [NSNumber numberWithBool:YES], @"inlineVideo",

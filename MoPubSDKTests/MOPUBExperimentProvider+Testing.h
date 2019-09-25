@@ -10,6 +10,6 @@
 
 @interface MOPUBExperimentProvider (Testing)
 
-@property (nonatomic, assign) BOOL isDisplayAgentOverriddenByClient;
++ (void)setDisplayAgentOverriddenByClientFlag:(BOOL)flag;
 
 @end

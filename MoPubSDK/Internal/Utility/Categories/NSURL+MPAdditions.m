@@ -8,6 +8,9 @@
 
 #import "NSURL+MPAdditions.h"
 
+static NSString * const kTelephoneScheme = @"tel";
+static NSString * const kTelephonePromptScheme = @"telprompt";
+
 // Share Constants
 static NSString * const kMoPubShareScheme = @"mopubshare";
 static NSString * const kMoPubShareTweetHost = @"tweet";
@@ -30,7 +33,7 @@ static NSString * const kMoPubRewardedVideoEndedHost = @"rewardedVideoEnded";
         if (keyAndValue.count >= 2 &&
             [[keyAndValue objectAtIndex:0] isEqualToString:key] &&
             [[keyAndValue objectAtIndex:1] length] > 0) {
-            return [[keyAndValue objectAtIndex:1] stringByRemovingPercentEncoding];
+            return [[keyAndValue objectAtIndex:1] stringByReplacingPercentEscapesUsingEncoding:NSUTF8StringEncoding];
         }
     }
     return nil;
@@ -45,7 +48,7 @@ static NSString * const kMoPubRewardedVideoEndedHost = @"rewardedVideoEnded";
         if (keyAndValue.count >= 2 &&
             [[keyAndValue objectAtIndex:0] isEqualToString:key] &&
             [[keyAndValue objectAtIndex:1] length] > 0) {
-            [matchingParameters addObject:[[keyAndValue objectAtIndex:1] stringByRemovingPercentEncoding]];
+            [matchingParameters addObject:[[keyAndValue objectAtIndex:1] stringByReplacingPercentEscapesUsingEncoding:NSUTF8StringEncoding]];
         }
     }
     return [NSArray arrayWithArray:matchingParameters];
@@ -60,10 +63,21 @@ static NSString * const kMoPubRewardedVideoEndedHost = @"rewardedVideoEnded";
         if (keyVal.count >= 2) {
             NSString *key = [keyVal objectAtIndex:0];
             NSString *value = [keyVal objectAtIndex:1];
-            [queryDict setObject:[value stringByRemovingPercentEncoding] forKey:key];
+            [queryDict setObject:[value stringByReplacingPercentEscapesUsingEncoding:NSUTF8StringEncoding]
+                          forKey:key];
         }
     }
     return queryDict;
+}
+
+- (BOOL)mp_hasTelephoneScheme
+{
+    return [[[self scheme] lowercaseString] isEqualToString:kTelephoneScheme];
+}
+
+- (BOOL)mp_hasTelephonePromptScheme
+{
+    return [[[self scheme] lowercaseString] isEqualToString:kTelephonePromptScheme];
 }
 
 - (BOOL)mp_isSafeForLoadingWithoutUserAction

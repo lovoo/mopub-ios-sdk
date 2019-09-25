@@ -8,7 +8,6 @@
 
 #import <XCTest/XCTest.h>
 #import "MPAdConfigurationFactory.h"
-#import "MPAdServerKeys.h"
 #import "MPAPIEndpoints.h"
 #import "MPConstants.h"
 #import "MPError.h"
@@ -20,7 +19,6 @@
 #import "MPStaticNativeAdRenderer.h"
 #import "MPNativeAdRendererConfiguration.h"
 #import "MPStaticNativeAdRendererSettings.h"
-#import "MPURL.h"
 #import "NSURLComponents+Testing.h"
 #import "MPNativeAdDelegateHandler.h"
 #import "MPNativeAd+Testing.h"
@@ -505,42 +503,6 @@ static const NSTimeInterval kTestTimeout   = 2; // seconds
     }];
 
     [[NSNotificationCenter defaultCenter] removeObserver:notificationObserver];
-}
-
-#pragma mark - Ad Sizing
-
-- (void)testNativeCreativeSizeSentAsZero {
-    XCTestExpectation * expectation = [self expectationWithDescription:@"Wait for native load"];
-
-    // Generate ad request
-    MPNativeAdRequest * nativeAdRequest = [MPNativeAdRequest requestWithAdUnitIdentifier:@"FAKE_AD_UNIT_ID" rendererConfigurations:self.rendererConfigurations];
-    MPMockAdServerCommunicator * communicator = [[MPMockAdServerCommunicator alloc] initWithDelegate:nativeAdRequest];
-    communicator.mockConfigurationsResponse = @[];
-
-    nativeAdRequest.communicator = communicator;
-    [nativeAdRequest startWithCompletionHandler:^(MPNativeAdRequest *request, MPNativeAd *response, NSError *error) {
-        if (error == nil) {
-            XCTFail(@"Unexpected success");
-        }
-        [expectation fulfill];
-    }];
-
-    [self waitForExpectationsWithTimeout:kTestTimeout handler:^(NSError * _Nullable error) {
-        if (error != nil) {
-            XCTFail(@"Timed out");
-        }
-    }];
-
-    XCTAssertTrue(communicator.numberOfBeforeLoadEventsFired == 0);
-    XCTAssertTrue(communicator.numberOfAfterLoadEventsFired == 0);
-
-    MPURL * url = [communicator.lastUrlLoaded isKindOfClass:[MPURL class]] ? (MPURL *)communicator.lastUrlLoaded : nil;
-    XCTAssertNotNil(url);
-
-    NSNumber * cw = [url numberForPOSTDataKey:kCreativeSafeWidthKey];
-    NSNumber * ch = [url numberForPOSTDataKey:kCreativeSafeHeightKey];
-    XCTAssert(cw.floatValue == 0.0);
-    XCTAssert(ch.floatValue == 0.0);
 }
 
 @end

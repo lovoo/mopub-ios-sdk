@@ -9,7 +9,7 @@
 #import <XCTest/XCTest.h>
 #import "MPAdConfiguration+Testing.h"
 #import "MOPUBExperimentProvider.h"
-#import "MoPub+Testing.h"
+#import "MoPub.h"
 #import "MPAdConfiguration.h"
 #import "MOPUBExperimentProvider+Testing.h"
 
@@ -20,64 +20,52 @@
 @implementation MOPUBExperimentProviderTests
 
 - (void)testClickthroughExperimentDefault {
-    MOPUBExperimentProvider *testSubject = [MOPUBExperimentProvider new];
-    testSubject.isDisplayAgentOverriddenByClient = NO;
-    MPAdConfiguration * config = [[MPAdConfiguration alloc] initWithMetadata:nil
-                                                                        data:nil
-                                                                      adType:MPAdTypeFullscreen
-                                                          experimentProvider:testSubject];
-
+    [MOPUBExperimentProvider setDisplayAgentOverriddenByClientFlag:NO];
+    MPAdConfiguration * config = [[MPAdConfiguration alloc] initWithMetadata:nil data:nil adType:MPAdTypeFullscreen];
     XCTAssertEqual(config.clickthroughExperimentBrowserAgent, MOPUBDisplayAgentTypeInApp);
-    XCTAssertEqual(testSubject.displayAgentType, MOPUBDisplayAgentTypeInApp);
-    XCTAssertFalse(testSubject.isDisplayAgentOverriddenByClient);
+    XCTAssertEqual([MOPUBExperimentProvider displayAgentType], MOPUBDisplayAgentTypeInApp);
 }
 
 - (void)testClickthroughExperimentInApp {
-    // 0 is the raw value of MOPUBDisplayAgentTypeInApp
+    [MOPUBExperimentProvider setDisplayAgentOverriddenByClientFlag:NO];
     NSDictionary * headers = @{ kClickthroughExperimentBrowserAgent: @"0"};
-    MOPUBExperimentProvider *testSubject = [MOPUBExperimentProvider new];
-    testSubject.isDisplayAgentOverriddenByClient = NO;
-    MPAdConfiguration * config = [[MPAdConfiguration alloc] initWithMetadata:headers
-                                                                        data:nil
-                                                                      adType:MPAdTypeFullscreen
-                                                          experimentProvider:testSubject];
-
+    MPAdConfiguration * config = [[MPAdConfiguration alloc] initWithMetadata:headers data:nil adType:MPAdTypeFullscreen];
     XCTAssertEqual(config.clickthroughExperimentBrowserAgent, MOPUBDisplayAgentTypeInApp);
-    XCTAssertEqual(testSubject.displayAgentType, MOPUBDisplayAgentTypeInApp);
-    XCTAssertFalse(testSubject.isDisplayAgentOverriddenByClient);
+    XCTAssertEqual([MOPUBExperimentProvider displayAgentType], MOPUBDisplayAgentTypeInApp);
 }
 
 - (void)testClickthroughExperimentNativeBrowser {
-    // 1 is the raw value of MOPUBDisplayAgentTypeNativeSafari
+    [MOPUBExperimentProvider setDisplayAgentOverriddenByClientFlag:NO];
     NSDictionary * headers = @{ kClickthroughExperimentBrowserAgent: @"1"};
-    MOPUBExperimentProvider *testSubject = [MOPUBExperimentProvider new];
-    testSubject.displayAgentType = MOPUBDisplayAgentTypeNativeSafari;
-    testSubject.isDisplayAgentOverriddenByClient = NO;
-    MPAdConfiguration * config = [[MPAdConfiguration alloc] initWithMetadata:headers
-                                                                        data:nil
-                                                                      adType:MPAdTypeFullscreen
-                                                          experimentProvider:testSubject];
-
+    MPAdConfiguration * config = [[MPAdConfiguration alloc] initWithMetadata:headers data:nil adType:MPAdTypeFullscreen];
     XCTAssertEqual(config.clickthroughExperimentBrowserAgent, MOPUBDisplayAgentTypeNativeSafari);
-    XCTAssertEqual(testSubject.displayAgentType, MOPUBDisplayAgentTypeNativeSafari);
-    XCTAssertFalse(testSubject.isDisplayAgentOverriddenByClient);
+    XCTAssertEqual([MOPUBExperimentProvider displayAgentType], MOPUBDisplayAgentTypeNativeSafari);
+}
+
+- (void)testClickthroughExperimentSafariViewController {
+    [MOPUBExperimentProvider setDisplayAgentOverriddenByClientFlag:NO];
+    NSDictionary * headers = @{ kClickthroughExperimentBrowserAgent: @"2"};
+    MPAdConfiguration * config = [[MPAdConfiguration alloc] initWithMetadata:headers data:nil adType:MPAdTypeFullscreen];
+    XCTAssertEqual(config.clickthroughExperimentBrowserAgent, MOPUBDisplayAgentTypeSafariViewController);
+    XCTAssertEqual([MOPUBExperimentProvider displayAgentType], MOPUBDisplayAgentTypeSafariViewController);
 }
 
 - (void)testClickthroughClientOverride {
-    MOPUBExperimentProvider *testSubject = [MOPUBExperimentProvider new];
-    MoPub *mopub = [[MoPub new] initWithExperimentProvider:testSubject];
-    XCTAssertEqual(mopub.experimentProvider.displayAgentType, MOPUBDisplayAgentTypeInApp); // default
-    XCTAssertFalse(mopub.experimentProvider.isDisplayAgentOverriddenByClient);
+    [[MoPub sharedInstance] setClickthroughDisplayAgentType:MOPUBDisplayAgentTypeInApp];
+
+    NSDictionary * headers = @{ kClickthroughExperimentBrowserAgent: @"2"};
+    MPAdConfiguration * config = [[MPAdConfiguration alloc] initWithMetadata:headers data:nil adType:MPAdTypeFullscreen];
+    XCTAssertEqual(config.clickthroughExperimentBrowserAgent, MOPUBDisplayAgentTypeSafariViewController);
+
+    XCTAssertEqual([MOPUBExperimentProvider displayAgentType], MOPUBDisplayAgentTypeInApp);
+
+    // Display agent type is overridden to MOPUBDisplayAgentTypeSafariViewController
+    [[MoPub sharedInstance] setClickthroughDisplayAgentType:MOPUBDisplayAgentTypeSafariViewController];
+    XCTAssertEqual([MOPUBExperimentProvider displayAgentType], MOPUBDisplayAgentTypeSafariViewController);
 
     // Display agent type is overridden to MOPUBDisplayAgentTypeNativeSafari
-    [mopub setClickthroughDisplayAgentType:MOPUBDisplayAgentTypeNativeSafari];
-    XCTAssertEqual(mopub.experimentProvider.displayAgentType, MOPUBDisplayAgentTypeNativeSafari);
-    XCTAssertTrue(mopub.experimentProvider.isDisplayAgentOverriddenByClient);
-
-    // Display agent type is overridden to MOPUBDisplayAgentTypeInApp
-    [mopub setClickthroughDisplayAgentType:MOPUBDisplayAgentTypeInApp];
-    XCTAssertEqual(mopub.experimentProvider.displayAgentType, MOPUBDisplayAgentTypeInApp);
-    XCTAssertTrue(mopub.experimentProvider.isDisplayAgentOverriddenByClient);
+    [[MoPub sharedInstance] setClickthroughDisplayAgentType:MOPUBDisplayAgentTypeNativeSafari];
+    XCTAssertEqual([MOPUBExperimentProvider displayAgentType], MOPUBDisplayAgentTypeNativeSafari);
 }
 
 @end

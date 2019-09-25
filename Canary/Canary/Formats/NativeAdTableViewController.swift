@@ -50,12 +50,6 @@ class NativeAdTableViewController: UIViewController, AdViewController {
         
         // Set the title
         title = adUnit.name
-        
-        // Set the background color for Dark Mode
-        if #available(iOS 13.0, *) {
-            tableView.backgroundColor = .systemBackground
-            view.backgroundColor = .systemBackground
-        }
     }
     
     // MARK: - DisplayableAd

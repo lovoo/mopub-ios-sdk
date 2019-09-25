@@ -14,12 +14,7 @@ static NSString * const kWebviewClickthroughURLBase = @"https://ads.mopub.com/m/
 
 @interface MPURLResolver (Testing)
 
-@property (nonatomic, readonly) BOOL shouldOpenWithInAppWebBrowser;
-
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wincomplete-implementation"
-- (NSDictionary *)appStoreProductParametersForURL:(NSURL *)URL;
-#pragma clang diagnostic pop
+- (BOOL)shouldEnableClickthroughExperiment;
 
 @end
 
@@ -35,49 +30,7 @@ static NSString * const kWebviewClickthroughURLBase = @"https://ads.mopub.com/m/
     [resolver start];
 
 
-    XCTAssertFalse(resolver.shouldOpenWithInAppWebBrowser);
-}
-
-- (void)testResolverSupportedAppleSchemes {
-    NSArray * supportedAppleStoreSubdomains = @[@"apps", @"books", @"itunes", @"music"];
-
-    for (NSString *subdomain in supportedAppleStoreSubdomains) {
-        NSString *testUrlString = [NSString stringWithFormat:@"https://%@.apple.com/id123456789", subdomain];
-        NSURL *testUrl = [NSURL URLWithString:testUrlString];
-        XCTAssertNotNil(testUrl);
-
-        MPURLResolver *resolver = [MPURLResolver resolverWithURL:testUrl completion:nil];
-        [resolver start];
-        XCTAssertFalse(resolver.shouldOpenWithInAppWebBrowser);
-    }
-}
-
-- (void)testResolverRedirectedSupportedAppleSchemes {
-    NSArray * supportedAppleStoreSubdomains = @[@"apps", @"books", @"itunes", @"music"];
-
-    for (NSString *subdomain in supportedAppleStoreSubdomains) {
-        NSString *testUrlString = [NSString stringWithFormat:@"%@&r=https%%3A%%2F%%2F%@.apple.com%%2Fid123456789", kWebviewClickthroughURLBase, subdomain];
-        NSURL *testUrl = [NSURL URLWithString:testUrlString];
-        XCTAssertNotNil(testUrl);
-
-        MPURLResolver *resolver = [MPURLResolver resolverWithURL:testUrl completion:nil];
-        [resolver start];
-        XCTAssertFalse(resolver.shouldOpenWithInAppWebBrowser);
-    }
-}
-
-- (void)testResolverAppleDeeplinkSchemes {
-    NSArray * appleStoreDeeplinkSchemes = @[@"itms", @"itmss", @"itms-apps"];
-
-    for (NSString *scheme in appleStoreDeeplinkSchemes) {
-        NSString *testUrlString = [NSString stringWithFormat:@"%@://itunes.apple.com/app/apple-store/id123456789", scheme];
-        NSURL *testUrl = [NSURL URLWithString:testUrlString];
-        XCTAssertNotNil(testUrl);
-
-        MPURLResolver *resolver = [MPURLResolver resolverWithURL:testUrl completion:nil];
-        [resolver start];
-        XCTAssertFalse(resolver.shouldOpenWithInAppWebBrowser);
-    }
+    XCTAssertFalse([resolver shouldEnableClickthroughExperiment]);
 }
 
 - (void)testHttpRedirectWithNativeSafari {
@@ -87,7 +40,7 @@ static NSString * const kWebviewClickthroughURLBase = @"https://ads.mopub.com/m/
     MPURLResolver *resolver = [MPURLResolver resolverWithURL:url completion:nil];
     [resolver start];
 
-    XCTAssertFalse(resolver.shouldOpenWithInAppWebBrowser);
+    XCTAssertTrue([resolver shouldEnableClickthroughExperiment]);
 }
 
 - (void)testHttpRedirectWithInAppBrowser {
@@ -97,7 +50,7 @@ static NSString * const kWebviewClickthroughURLBase = @"https://ads.mopub.com/m/
     MPURLResolver *resolver = [MPURLResolver resolverWithURL:url completion:nil];
     [resolver start];
 
-    XCTAssertTrue(resolver.shouldOpenWithInAppWebBrowser);
+    XCTAssertFalse([resolver shouldEnableClickthroughExperiment]);
 }
 
 - (void)testMopubnativebrowserRedirectWithNativeSafari {
@@ -108,7 +61,7 @@ static NSString * const kWebviewClickthroughURLBase = @"https://ads.mopub.com/m/
     MPURLResolver *resolver = [MPURLResolver resolverWithURL:url completion:nil];
     [resolver start];
 
-    XCTAssertFalse(resolver.shouldOpenWithInAppWebBrowser);
+    XCTAssertFalse([resolver shouldEnableClickthroughExperiment]);
 }
 
 - (void)testHttpNonRedirectWithNativeSafari {
@@ -117,7 +70,7 @@ static NSString * const kWebviewClickthroughURLBase = @"https://ads.mopub.com/m/
     MPURLResolver *resolver = [MPURLResolver resolverWithURL:url completion:nil];
     [resolver start];
 
-    XCTAssertFalse(resolver.shouldOpenWithInAppWebBrowser);
+    XCTAssertFalse([resolver shouldEnableClickthroughExperiment]);
 }
 
 - (void)testNonWebviewWithNativeSafari {
@@ -127,7 +80,7 @@ static NSString * const kWebviewClickthroughURLBase = @"https://ads.mopub.com/m/
     MPURLResolver *resolver = [MPURLResolver resolverWithURL:url completion:nil];
     [resolver start];
 
-    XCTAssertFalse(resolver.shouldOpenWithInAppWebBrowser);
+    XCTAssertTrue([resolver shouldEnableClickthroughExperiment]);
 }
 
 - (void)testNonWebviewWithInappBrowser {
@@ -137,51 +90,7 @@ static NSString * const kWebviewClickthroughURLBase = @"https://ads.mopub.com/m/
     MPURLResolver *resolver = [MPURLResolver resolverWithURL:url completion:nil];
     [resolver start];
 
-    XCTAssertTrue(resolver.shouldOpenWithInAppWebBrowser);
-}
-
-- (void)testValidAppleStoreURLParsing {
-    NSURL *url = [NSURL URLWithString:@"https://itunes.apple.com/us/album/fame-monster-deluxe-version/id902143901?mt=1&at=123456&app=itunes&ct=newsletter1"];
-    MPURLResolver *resolver = [MPURLResolver resolverWithURL:url completion:nil];
-    NSDictionary *parameters = [resolver appStoreProductParametersForURL:url];
-
-    XCTAssertNotNil(parameters);
-    XCTAssert([parameters[SKStoreProductParameterITunesItemIdentifier] isEqualToString:@"902143901"]);
-    XCTAssert([parameters[SKStoreProductParameterAffiliateToken] isEqualToString:@"123456"]);
-    XCTAssert([parameters[SKStoreProductParameterCampaignToken] isEqualToString:@"newsletter1"]);
-}
-
-- (void)testValidAppleStoreURLParsingOnlyId {
-    NSURL *url = [NSURL URLWithString:@"https://itunes.apple.com/us/album/fame-monster-deluxe-version/902143901"];
-    MPURLResolver *resolver = [MPURLResolver resolverWithURL:url completion:nil];
-    NSDictionary *parameters = [resolver appStoreProductParametersForURL:url];
-
-    XCTAssertNotNil(parameters);
-    XCTAssert([parameters[SKStoreProductParameterITunesItemIdentifier] isEqualToString:@"902143901"]);
-}
-
-- (void)testInvalidAppleStoreURLParsingMissingId {
-    NSURL *url = [NSURL URLWithString:@"https://itunes.apple.com/us/album/fame-monster-deluxe-version/?mt=1&at=123456&app=itunes&ct=newsletter1"];
-    MPURLResolver *resolver = [MPURLResolver resolverWithURL:url completion:nil];
-    NSDictionary *parameters = [resolver appStoreProductParametersForURL:url];
-
-    XCTAssertNil(parameters);
-}
-
-- (void)testInvalidAppleStoreURLParsingBadId {
-    NSURL *url = [NSURL URLWithString:@"https://itunes.apple.com/us/album/fame-monster-deluxe-version/id902143901zzz?mt=1&at=123456&app=itunes&ct=newsletter1"];
-    MPURLResolver *resolver = [MPURLResolver resolverWithURL:url completion:nil];
-    NSDictionary *parameters = [resolver appStoreProductParametersForURL:url];
-
-    XCTAssertNil(parameters);
-}
-
-- (void)testInvalidAppleStoreURLParsingNotAppleUrl {
-    NSURL *url = [NSURL URLWithString:@"https://www.google.com"];
-    MPURLResolver *resolver = [MPURLResolver resolverWithURL:url completion:nil];
-    NSDictionary *parameters = [resolver appStoreProductParametersForURL:url];
-
-    XCTAssertNil(parameters);
+    XCTAssertFalse([resolver shouldEnableClickthroughExperiment]);
 }
 
 @end

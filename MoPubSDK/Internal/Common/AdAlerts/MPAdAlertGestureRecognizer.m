@@ -14,12 +14,6 @@
 #define kDefaultMinTrackedDistance 100
 #define kDefaultNumZigZagsForRecognition 4
 
-typedef NS_ENUM(NSUInteger, MPAdAlertGestureRecognizerState) {
-    MPAdAlertGestureRecognizerState_ZigRight1,
-    MPAdAlertGestureRecognizerState_ZagLeft2,
-    MPAdAlertGestureRecognizerState_Recognized
-};
-
 NSInteger const kMPAdAlertGestureMaxAllowedYAxisMovement = 50;
 
 @interface MPAdAlertGestureRecognizer ()
@@ -29,7 +23,6 @@ NSInteger const kMPAdAlertGestureMaxAllowedYAxisMovement = 50;
 @property (nonatomic, assign) CGPoint startingPoint;
 @property (nonatomic, assign) BOOL thresholdReached;
 @property (nonatomic, assign) NSInteger curNumZigZags;
-@property (nonatomic, assign) NSInteger numZigZagsForRecognition; // default is 4
 
 @end
 

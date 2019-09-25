@@ -43,7 +43,7 @@ NS_ASSUME_NONNULL_BEGIN
  @param adUnitId The ad unit ID to check reason for
  @return The last reason given for this ad unit id, or @c nil for first request or if no reason was given
  */
-- (NSString * _Nullable)lastRateLimitReasonForAdUnitId:(NSString *)adUnitId;
+- (NSString *)lastRateLimitReasonForAdUnitId:(NSString *)adUnitId;
 
 @end
 

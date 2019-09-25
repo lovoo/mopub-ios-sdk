@@ -9,6 +9,10 @@
 import UIKit
 
 class ManualEntryInterfaceViewController: UIViewController {
+    /**
+     The shared app delegate. This is used to access deep linking functionality contained in app delegate.
+     */
+    let appDelegate = UIApplication.shared.delegate as? AppDelegate
     
     var selectedFormat: AdFormat = AdFormat.allCases[0] {
         didSet {
@@ -21,15 +25,10 @@ class ManualEntryInterfaceViewController: UIViewController {
         
         // Set button text to default ad format text
         adFormatButton.setTitle(selectedFormat.rawValue, for: .normal)
-        
-        // Set background color for Dark Mode
-        if #available(iOS 13.0, *) {
-            view.backgroundColor = .systemBackground
-        }
     }
     
     fileprivate func dismissAndShowAd(shouldSave: Bool) {
-        guard let savedAdSplitViewController = savedAdSplitViewController else {
+        guard let appDelegate = appDelegate else {
             return
         }
         
@@ -57,11 +56,11 @@ class ManualEntryInterfaceViewController: UIViewController {
         }
         
         // If everything is formed correctly, dismiss and show ad.
-        dismiss(animated: true) {
-            SceneDelegate.openMoPubAdUnit(adUnit: adUnit,
-                                          onto: savedAdSplitViewController,
-                                          shouldSave: shouldSave)
-        }
+        navigationController?.dismiss(animated: true, completion: {
+            _ = appDelegate.openMoPubAdUnit(adUnit: adUnit,
+                                            onto: appDelegate.savedAdSplitViewController,
+                                            shouldSave: shouldSave)
+        })
     }
     
     // MARK: - IBOutlets

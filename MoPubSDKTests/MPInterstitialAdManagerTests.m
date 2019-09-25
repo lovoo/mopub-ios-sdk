@@ -245,7 +245,7 @@ static const NSTimeInterval kDefaultTimeout = 10;
     communicator.mockConfigurationsResponse = configurations;
     manager.communicator = communicator;
 
-    MPAdTargeting * targeting = [[MPAdTargeting alloc] initWithCreativeSafeSize:CGSizeZero];
+    MPAdTargeting * targeting = [[MPAdTargeting alloc] init];
     targeting.localExtras = @{ @"testing": @"YES" };
     [manager loadInterstitialWithAdUnitID:@"TEST_ADUNIT_ID" targeting:targeting];
 
@@ -293,7 +293,7 @@ static const NSTimeInterval kDefaultTimeout = 10;
         [adapter trackImpression];
     };
 
-    MPAdTargeting * targeting = [[MPAdTargeting alloc] initWithCreativeSafeSize:CGSizeZero];
+    MPAdTargeting * targeting = [[MPAdTargeting alloc] init];
     [manager loadInterstitialWithAdUnitID:testAdUnitID targeting:targeting];
 
     [self waitForExpectationsWithTimeout:kDefaultTimeout handler:^(NSError * _Nullable error) {
@@ -333,7 +333,7 @@ static const NSTimeInterval kDefaultTimeout = 10;
         [adapter trackImpression];
     };
 
-    MPAdTargeting * targeting = [[MPAdTargeting alloc] initWithCreativeSafeSize:CGSizeZero];
+    MPAdTargeting * targeting = [[MPAdTargeting alloc] init];
     [manager loadInterstitialWithAdUnitID:testAdUnitID targeting:targeting];
 
     [self waitForExpectationsWithTimeout:kDefaultTimeout handler:^(NSError * _Nullable error) {

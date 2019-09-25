@@ -25,7 +25,6 @@
 @property (nonatomic, strong) MPAdServerCommunicator *communicator;
 @property (nonatomic, strong) MPAdConfiguration *configuration;
 @property (nonatomic, strong) NSMutableArray<MPAdConfiguration *> *remainingConfigurations;
-@property (nonatomic, strong) NSURL *mostRecentlyLoadedURL;  // ADF-4286: avoid infinite ad reloads
 @property (nonatomic, assign) BOOL loading;
 @property (nonatomic, assign) BOOL playedAd;
 @property (nonatomic, assign) BOOL ready;
@@ -96,7 +95,10 @@
         // set customerId. Other ads require customerId on presentation in which we will use this new id coming in when presenting the ad.
         self.customerId = customerId;
         self.targeting = targeting;
-        [self loadAdWithURL:[MPAdServerURLBuilder URLWithAdUnitID:self.adUnitID targeting:targeting]];
+        [self loadAdWithURL:[MPAdServerURLBuilder URLWithAdUnitID:self.adUnitID
+                                                         keywords:targeting.keywords
+                                                 userDataKeywords:targeting.userDataKeywords
+                                                         location:targeting.location]];
     }
 }
 
@@ -173,7 +175,6 @@
     }
 
     self.loading = YES;
-    self.mostRecentlyLoadedURL = URL;
     [self.communicator loadURL:URL];
 }
 
@@ -290,8 +291,7 @@
         [self fetchAdWithConfiguration:self.configuration];
     }
     // No more configurations to try. Send new request to Ads server to get more Ads.
-    else if (self.configuration.nextURL != nil
-             && [self.configuration.nextURL isEqual:self.mostRecentlyLoadedURL] == false) {
+    else if (self.configuration.nextURL != nil) {
         self.ready = NO;
         self.loading = NO;
         [self loadAdWithURL:self.configuration.nextURL];
@@ -320,7 +320,7 @@
     // Playback of the rewarded video failed; reset the internal played state
     // so that a new rewarded video ad can be loaded.
     self.ready = NO;
-    self.playedAd = NO;
+    self.playedAd = YES;
 
     MPLogAdEvent([MPLogEvent adShowFailedWithError:error], self.adUnitID);
     [self.delegate rewardedVideoDidFailToPlayForAdManager:self error:error];

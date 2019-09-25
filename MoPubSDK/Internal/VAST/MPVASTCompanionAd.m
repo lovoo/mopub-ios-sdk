@@ -10,7 +10,6 @@
 #import "MPVASTResource.h"
 #import "MPVASTStringUtilities.h"
 #import "MPVASTTrackingEvent.h"
-#import "MPVASTTracking.h"
 
 @implementation MPVASTCompanionAd
 
@@ -31,7 +30,7 @@
             }
             [events addObject:event];
         }
-        _creativeViewTrackers = eventsDictionary[MPVideoEventCreativeView];
+        _trackingEvents = eventsDictionary;
     }
     return self;
 }
@@ -49,12 +48,6 @@
              @"HTMLResources":      @[@"HTMLResource", MPParseArrayOf(MPParseClass([MPVASTResource class]))],
              @"iframeResources":    @[@"IFrameResource", MPParseArrayOf(MPParseClass([MPVASTResource class]))],
              @"staticResources":    @[@"StaticResource", MPParseArrayOf(MPParseClass([MPVASTResource class]))]};
-}
-
-- (BOOL)hasResources {
-    return (self.staticResources.count > 0
-            || self.HTMLResources.count > 0
-            || self.iframeResources.count > 0);
 }
 
 @end

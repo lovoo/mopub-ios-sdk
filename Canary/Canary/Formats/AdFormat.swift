@@ -21,11 +21,16 @@ enum AdFormat: String, CaseIterable {
      Full screen interstitial
      */
     case Interstitial = "Interstitial"
-        
+    
     /**
-     Medium rectangle
+     728x90 leaderboard banner
      */
-    case MediumRectangle = "MediumRectangle"
+    case Leaderboard = "Leaderboard"
+    
+    /**
+     320x250 medium rectangle banner
+     */
+    case MRect = "MRect"
     
     /**
      Native ad
@@ -56,7 +61,8 @@ enum AdFormat: String, CaseIterable {
         switch self {
         case .Banner:                   return "BannerAdViewController"
         case .Interstitial:             return "InterstitialAdViewController"
-        case .MediumRectangle:          return "MediumRectangleAdViewController"
+        case .Leaderboard:              return "LeaderboardAdViewController"
+        case .MRect:                    return "MediumRectangleAdViewController"
         case .Native:                   return "NativeAdViewController"
         case .NativeCollectionPlacer:   return "NativeAdCollectionViewController"
         case .NativeTablePlacer:        return "NativeAdTableViewController"

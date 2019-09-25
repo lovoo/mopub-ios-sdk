@@ -7,7 +7,6 @@
 //
 
 #import "MoPub.h"
-#import "MPAdServerURLBuilder.h"
 #import "MPConsentManager.h"
 #import "MPConstants.h"
 #import "MPCoreInstanceProvider.h"
@@ -24,15 +23,11 @@
 #import "MPConsentChangedNotification.h"
 #import "MPSessionTracker.h"
 
-static NSString * const kPublisherEnteredAdUnitIdStorageKey = @"com.mopub.mopub-ios-sdk.initialization.publisher.entered.ad.unit.id";
-
 @interface MoPub ()
 
 @property (nonatomic, strong) NSArray *globalMediationSettings;
 
 @property (nonatomic, assign, readwrite) BOOL isSdkInitialized;
-
-@property (nonatomic, strong) MOPUBExperimentProvider *experimentProvider;
 
 @end
 
@@ -51,19 +46,10 @@ static NSString * const kPublisherEnteredAdUnitIdStorageKey = @"com.mopub.mopub-
 - (instancetype)init
 {
     if (self = [super init]) {
-        [self commonInitWithExperimentProvider:MOPUBExperimentProvider.sharedInstance];
+        // Processing personal data if a user is in GDPR region.
+        [self handlePersonalData];
     }
     return self;
-}
-
-/**
- This common init enables unit testing with an `MOPUBExperimentProvider` instance that is not a singleton.
- */
-- (void)commonInitWithExperimentProvider:(MOPUBExperimentProvider *)experimentProvider
-{
-    // Processing personal data if a user is in GDPR region.
-    [self handlePersonalData];
-    _experimentProvider = experimentProvider;
 }
 
 - (void)setLocationUpdatesEnabled:(BOOL)locationUpdatesEnabled
@@ -81,6 +67,16 @@ static NSString * const kPublisherEnteredAdUnitIdStorageKey = @"com.mopub.mopub-
     [MPIdentityProvider setFrequencyCappingIdUsageEnabled:frequencyCappingIdUsageEnabled];
 }
 
+- (void)setForceWKWebView:(BOOL)forceWKWebView
+{
+    [MPWebView forceWKWebView:forceWKWebView];
+}
+
+- (BOOL)forceWKWebView
+{
+    return [MPWebView isForceWKWebView];
+}
+
 - (void)setLogLevel:(MPBLogLevel)level
 {
     MPLogging.consoleLogLevel = level;
@@ -93,7 +89,7 @@ static NSString * const kPublisherEnteredAdUnitIdStorageKey = @"com.mopub.mopub-
 
 - (void)setClickthroughDisplayAgentType:(MOPUBDisplayAgentType)displayAgentType
 {
-    self.experimentProvider.displayAgentType = displayAgentType;
+    [MOPUBExperimentProvider setDisplayAgentType:displayAgentType];
 }
 
 - (BOOL)frequencyCappingIdUsageEnabled
@@ -115,15 +111,10 @@ static NSString * const kPublisherEnteredAdUnitIdStorageKey = @"com.mopub.mopub-
 - (void)initializeSdkWithConfiguration:(MPMoPubConfiguration *)configuration
                             completion:(void(^_Nullable)(void))completionBlock
 {
-    if (@available(iOS 9, *)) {
-        static dispatch_once_t onceToken;
-        dispatch_once(&onceToken, ^{
-            [self setSdkWithConfiguration:configuration completion:completionBlock];
-        });
-    } else {
-        MPLogEvent([MPLogEvent error:[NSError sdkMinimumOsVersion:9] message:nil]);
-        NSAssert(false, @"MoPub SDK requires iOS 9 and up");
-    }
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        [self setSdkWithConfiguration:configuration completion:completionBlock];
+    });
 }
 
 - (void)setSdkWithConfiguration:(MPMoPubConfiguration *)configuration
@@ -142,12 +133,6 @@ static NSString * const kPublisherEnteredAdUnitIdStorageKey = @"com.mopub.mopub-
         // Configure the consent manager and synchronize regardless of the result
         // of `checkForDoNotTrackAndTransition`.
         dispatch_group_enter(initializationGroup);
-        // If the publisher has changed their adunit ID for app initialization, clear our adunit ID caches
-        NSString * cachedPublisherEnteredAdUnitID = [NSUserDefaults.standardUserDefaults stringForKey:kPublisherEnteredAdUnitIdStorageKey];
-        if (![configuration.adUnitIdForAppInitialization isEqualToString:cachedPublisherEnteredAdUnitID]) {
-            [MPConsentManager.sharedManager clearAdUnitIdUsedForConsent];
-            [NSUserDefaults.standardUserDefaults setObject:configuration.adUnitIdForAppInitialization forKey:kPublisherEnteredAdUnitIdStorageKey];
-        }
         MPConsentManager.sharedManager.adUnitIdUsedForConsent = configuration.adUnitIdForAppInitialization;
         MPConsentManager.sharedManager.allowLegitimateInterest = configuration.allowLegitimateInterest;
         [MPConsentManager.sharedManager checkForDoNotTrackAndTransition];
@@ -204,11 +189,6 @@ static NSString * const kPublisherEnteredAdUnitIdStorageKey = @"com.mopub.mopub-
     [MPViewabilityTracker disableViewability:vendors];
 }
 
-- (void)setEngineInformation:(MPEngineInfo *)info
-{
-    MPAdServerURLBuilder.engineInformation = info;
-}
-
 @end
 
 @implementation MoPub (Mediation)
@@ -243,7 +223,7 @@ static NSString * const kPublisherEnteredAdUnitIdStorageKey = @"com.mopub.mopub-
 }
 
 - (void)clearCachedNetworks {
-    [MPMediationManager.sharedManager clearCache];
+    return [MPMediationManager.sharedManager clearCache];
 }
 
 @end

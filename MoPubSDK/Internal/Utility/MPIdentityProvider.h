@@ -25,11 +25,6 @@
 */
 + (NSString *)obfuscatedIdentifier;
 
-/**
- * Return the unobfuscated MoPub UUID, without the "mopub:" prefix.
- */
-+ (NSString *)unobfuscatedMoPubIdentifier;
-
 + (BOOL)advertisingTrackingEnabled;
 
 /**

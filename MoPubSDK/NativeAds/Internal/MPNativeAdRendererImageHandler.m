@@ -64,11 +64,12 @@
 
             __weak __typeof__(self) weakSelf = self;
             [self.imageDownloadQueue addDownloadImageURLs:@[imageURL]
-                                          completionBlock:^(NSDictionary <NSURL *, UIImage *> *result, NSArray *errors) {
+                                          completionBlock:^(NSArray *errors) {
                                               __strong __typeof__(self) strongSelf = weakSelf;
                                               if (strongSelf) {
-                                                  UIImage *image = result[imageURL];
-                                                  if (image != nil && errors.count == 0) {
+                                                  if (errors.count == 0) {
+                                                      UIImage *image = [UIImage imageWithData:[[MPNativeCache sharedCache] retrieveDataForKey:imageURL.absoluteString]];
+
                                                       [strongSelf safeMainQueueSetImage:image intoImageView:imageView];
                                                   }
                                               }

@@ -7,7 +7,6 @@
 //
 
 #import "MPMRAIDInterstitialCustomEvent.h"
-#import "MPMRAIDInterstitialViewController.h"
 #import "MPAdConfiguration.h"
 #import "MPError.h"
 #import "MPLogging.h"
@@ -18,14 +17,7 @@
 
 @end
 
-@interface MPMRAIDInterstitialCustomEvent (MPInterstitialViewControllerDelegate) <MPInterstitialViewControllerDelegate>
-@end
-
 @implementation MPMRAIDInterstitialCustomEvent
-
-// Explicitly `@synthesize` here to fix a "-Wobjc-property-synthesis" warning because super class `delegate` is
-// `id<MPInterstitialCustomEventDelegate>` and this `delegate` is `id<MPPrivateInterstitialCustomEventDelegate>`
-@synthesize delegate;
 
 - (void)requestInterstitialWithCustomEventInfo:(NSDictionary *)info
 {
@@ -53,11 +45,7 @@
     }];
 }
 
-@end
-
-#pragma mark - MPInterstitialViewControllerDelegate
-
-@implementation MPMRAIDInterstitialCustomEvent (MPInterstitialViewControllerDelegate)
+#pragma mark - MPMRAIDInterstitialViewControllerDelegate
 
 - (CLLocation *)location
 {
@@ -69,13 +57,13 @@
     return [self.delegate adUnitId];
 }
 
-- (void)interstitialDidLoadAd:(id<MPInterstitialViewController>)interstitial
+- (void)interstitialDidLoadAd:(MPInterstitialViewController *)interstitial
 {
     MPLogAdEvent([MPLogEvent adLoadSuccessForAdapter:NSStringFromClass(self.class)], self.adUnitId);
     [self.delegate interstitialCustomEvent:self didLoadAd:self.interstitial];
 }
 
-- (void)interstitialDidFailToLoadAd:(id<MPInterstitialViewController>)interstitial
+- (void)interstitialDidFailToLoadAd:(MPInterstitialViewController *)interstitial
 {
     NSString * message = [NSString stringWithFormat:@"Failed to load creative:\n%@", self.delegate.configuration.adResponseHTMLString];
     NSError * error = [NSError errorWithCode:MOPUBErrorAdapterFailedToLoadAd localizedDescription:message];
@@ -84,22 +72,22 @@
     [self.delegate interstitialCustomEvent:self didFailToLoadAdWithError:error];
 }
 
-- (void)interstitialWillAppear:(id<MPInterstitialViewController>)interstitial
+- (void)interstitialWillAppear:(MPInterstitialViewController *)interstitial
 {
     [self.delegate interstitialCustomEventWillAppear:self];
 }
 
-- (void)interstitialDidAppear:(id<MPInterstitialViewController>)interstitial
+- (void)interstitialDidAppear:(MPInterstitialViewController *)interstitial
 {
     [self.delegate interstitialCustomEventDidAppear:self];
 }
 
-- (void)interstitialWillDisappear:(id<MPInterstitialViewController>)interstitial
+- (void)interstitialWillDisappear:(MPInterstitialViewController *)interstitial
 {
     [self.delegate interstitialCustomEventWillDisappear:self];
 }
 
-- (void)interstitialDidDisappear:(id<MPInterstitialViewController>)interstitial
+- (void)interstitialDidDisappear:(MPInterstitialViewController *)interstitial
 {
     [self.delegate interstitialCustomEventDidDisappear:self];
 
@@ -109,12 +97,12 @@
     self.interstitial = nil;
 }
 
-- (void)interstitialDidReceiveTapEvent:(id<MPInterstitialViewController>)interstitial
+- (void)interstitialDidReceiveTapEvent:(MPInterstitialViewController *)interstitial
 {
     [self.delegate interstitialCustomEventDidReceiveTapEvent:self];
 }
 
-- (void)interstitialWillLeaveApplication:(id<MPInterstitialViewController>)interstitial
+- (void)interstitialWillLeaveApplication:(MPInterstitialViewController *)interstitial
 {
     [self.delegate interstitialCustomEventWillLeaveApplication:self];
 }

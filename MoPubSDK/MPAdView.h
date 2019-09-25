@@ -21,18 +21,10 @@ typedef enum
 /**
  * The MPAdView class provides a view that can display banner advertisements.
  */
-IB_DESIGNABLE
+
 @interface MPAdView : UIView <MPMoPubAd>
 
 /** @name Initializing a Banner Ad */
-
-/**
- * Initializes an MPAdView with the given ad unit ID.
- *
- * @param adUnitId A string representing a MoPub ad unit ID.
- * @return A newly initialized ad view corresponding to the given ad unit ID and size.
- */
-- (id)initWithAdUnitId:(NSString *)adUnitId;
 
 /**
  * Initializes an MPAdView with the given ad unit ID and banner size.
@@ -41,12 +33,15 @@ IB_DESIGNABLE
  * @param size The desired ad size. A list of standard ad sizes is available in MPConstants.h.
  * @return A newly initialized ad view corresponding to the given ad unit ID and size.
  */
-- (id)initWithAdUnitId:(NSString *)adUnitId size:(CGSize)size __attribute__((deprecated("Use initWithAdUnitId: instead")));
+- (id)initWithAdUnitId:(NSString *)adUnitId size:(CGSize)size;
 
 /** @name Setting and Getting the Delegate */
 
 /**
  * The delegate (`MPAdViewDelegate`) of the ad view.
+ *
+ * @warning **Important**: Before releasing an instance of `MPAdView`, you must set its delegate
+ * property to `nil`.
  */
 @property (nonatomic, weak) id<MPAdViewDelegate> delegate;
 
@@ -59,12 +54,7 @@ IB_DESIGNABLE
  * application set aside for advertising. If no ad unit ID is set, the ad view will use a default
  * ID that only receives test ads.
  */
-@property (nonatomic, copy) IBInspectable NSString *adUnitId;
-
-/**
- * The maximum desired ad size. A list of standard ad sizes is available in MPConstants.h.
- */
-@property (nonatomic, assign) IBInspectable CGSize maxAdSize;
+@property (nonatomic, copy) NSString *adUnitId;
 
 /**
  * A string representing a set of non-personally identifiable keywords that should be passed to the MoPub ad server to receive
@@ -103,8 +93,7 @@ IB_DESIGNABLE
 /** @name Loading a Banner Ad */
 
 /**
- * Requests a new ad from the MoPub ad server with a maximum desired ad size equal to
- * the size of the current @c bounds of this view.
+ * Requests a new ad from the MoPub ad server.
  *
  * If the ad view is already loading an ad, this call will be ignored. You may use `forceRefreshAd`
  * if you would like cancel any existing ad requests and force a new ad to load.
@@ -112,20 +101,7 @@ IB_DESIGNABLE
 - (void)loadAd;
 
 /**
- * Requests a new ad from the MoPub ad server with the specified maximum desired ad size.
- *
- * If the ad view is already loading an ad, this call will be ignored. You may use `forceRefreshAd`
- * if you would like cancel any existing ad requests and force a new ad to load.
- *
- * @param size The maximum desired ad size to request. You may specify this value manually,
- * or use one of the presets found in @c MPConstants.h for the most common types of maximum ad sizes.
- * If using @c kMPPresetMaxAdSizeMatchFrame, the frame will be used as the maximum ad size.
- */
-- (void)loadAdWithMaxAdSize:(CGSize)size;
-
-/**
- * Cancels any existing ad requests and requests a new ad from the MoPub ad server
- * using the previously loaded maximum desired ad size.
+ * Cancels any existing ad requests and requests a new ad from the MoPub ad server.
  */
 - (void)forceRefreshAd;
 

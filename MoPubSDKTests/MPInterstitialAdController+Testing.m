@@ -8,10 +8,6 @@
 
 #import "MPInterstitialAdController+Testing.h"
 
-// Suppress warning of accessing private implementation `interstitialAdManager:didReceiveImpressionEventWithImpressionData:`
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wincomplete-implementation"
 @implementation MPInterstitialAdController (Testing)
 @dynamic manager;
 @end
-#pragma clang diagnostic pop

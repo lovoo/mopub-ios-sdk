@@ -12,7 +12,6 @@
 #import "MPHTTPNetworkSession.h"
 #import "MPLogging.h"
 #import "MPURLRequest.h"
-#import "MPVASTTrackingEvent.h"
 
 @implementation MPAnalyticsTracker
 
@@ -25,10 +24,6 @@
     });
     return sharedTracker;
 }
-
-@end
-
-@implementation MPAnalyticsTracker (MPAnalyticsTracker)
 
 - (void)trackImpressionForConfiguration:(MPAdConfiguration *)configuration
 {
@@ -45,7 +40,7 @@
     [MPHTTPNetworkSession startTaskWithHttpRequest:request];
 }
 
-- (void)sendTrackingRequestForURLs:(NSArray<NSURL *> *)URLs
+- (void)sendTrackingRequestForURLs:(NSArray *)URLs
 {
     for (NSURL *URL in URLs) {
         MPURLRequest * trackingRequest = [[MPURLRequest alloc] initWithURL:URL];

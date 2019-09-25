@@ -215,10 +215,7 @@ static const NSTimeInterval kTestTimeout = 2; // seconds
 
     // Retrieve initialization parameters
     MPMockAdColonyAdapterConfiguration * adapter = [MPMockAdColonyAdapterConfiguration new];
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wnonnull" // intentional nil test
     NSDictionary<NSString *, NSString *> * params = [MPMediationManager.sharedManager parametersForAdapter:adapter overrideConfiguration:nil];
-#pragma clang diagnostic pop
 
     XCTAssertNotNil(params);
     XCTAssert([params[@"appId"] isEqualToString:@"aaaa"]);
@@ -263,10 +260,7 @@ static const NSTimeInterval kTestTimeout = 2; // seconds
 }
 
 - (void)testMissingAdaptersPlist {
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wnonnull" // intentional nil test
     MPMediationManager.adapterInformationProvidersFilePath = nil;
-#pragma clang diagnostic pop
 
     NSSet<Class<MPAdapterConfiguration>> * certifiedAdapters = MPMediationManager.certifiedAdapterInformationProviderClasses;
     XCTAssert(certifiedAdapters.count == 0);

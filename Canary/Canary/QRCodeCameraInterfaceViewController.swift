@@ -34,6 +34,12 @@ class QRCodeCameraInterfaceViewController: UIViewController {
      */
     let cameraDispatchQueue = DispatchQueue(label: "Camera Dispatch Queue")
     
+    /**
+     The shared app delegate. This is used to access deep linking functionality contained in app delegate when
+     `metadataOutput(_ output: AVCaptureMetadataOutput, didOutput metadataObjects: [AVMetadataObject], from connection: AVCaptureConnection)` is called.
+     */
+    let appDelegate = UIApplication.shared.delegate as? AppDelegate
+    
     // Always leave the status bar hidden because this is a fullscreen camera feed.
     override var prefersStatusBarHidden: Bool {
         return true
@@ -170,10 +176,6 @@ extension QRCodeCameraInterfaceViewController: AVCaptureMetadataOutputObjectsDel
     func metadataOutput(_ output: AVCaptureMetadataOutput,
                         didOutput metadataObjects: [AVMetadataObject],
                         from connection: AVCaptureConnection) {
-        guard let savedAdSplitViewController = savedAdSplitViewController else {
-            return
-        }
-        
         for metadataObject in metadataObjects {
             // We do not care about metadata objects that cannot be converted to URLs or that are not QR codes, and we
             // do not care about URLs that cannot be validated into ad units.
@@ -181,18 +183,19 @@ extension QRCodeCameraInterfaceViewController: AVCaptureMetadataOutputObjectsDel
                 let urlString = metadataObject.stringValue,
                 let url = URL(string: urlString),
                 let adUnit = AdUnit(url: url),
+                let appDelegate = appDelegate,
                 metadataObject.type == .qr else {
                 continue
             }
             
             // If we find a usable URL, open it, close the camera, and break the loop.
             DispatchQueue.main.async {
-                self.dismissCamera {
+                self.dismissCamera(completion: {
                     // Open `adUnit` via the same path that deep linking uses
-                    SceneDelegate.openMoPubAdUnit(adUnit: adUnit,
-                                                  onto: savedAdSplitViewController,
-                                                  shouldSave: true)
-                }
+                    _ = appDelegate.openMoPubAdUnit(adUnit: adUnit,
+                                                    onto: appDelegate.savedAdSplitViewController,
+                                                    shouldSave: true)
+                })
             }
             break
         }

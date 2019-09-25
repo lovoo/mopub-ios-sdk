@@ -91,14 +91,6 @@ static void(^sDidSendServerToServerCallbackUrl)(NSURL * url) = nil;
     return adManager;
 }
 
-+ (MPRewardedVideoAdManager *)makeAdManagerForAdUnitId:(NSString *)adUnitId {
-    MPRewardedVideoAdManager * manager = [[MPRewardedVideoAdManager alloc] initWithAdUnitID:adUnitId delegate:MPRewardedVideo.sharedInstance];
-    MPRewardedVideo *sharedInstance = [MPRewardedVideo sharedInstance];
-    sharedInstance.rewardedVideoAdManagers[adUnitId] = manager;
-
-    return manager;
-}
-
 #pragma mark - Swizzles
 
 - (void)testing_startRewardedVideoConnectionWithUrl:(NSURL *)url {

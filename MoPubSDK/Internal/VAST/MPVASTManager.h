@@ -17,6 +17,7 @@ typedef enum {
 
 @interface MPVASTManager : NSObject
 
++ (void)fetchVASTWithURL:(NSURL *)URL completion:(void (^)(MPVASTResponse *, NSError *))completion;
 + (void)fetchVASTWithData:(NSData *)data completion:(void (^)(MPVASTResponse *, NSError *))completion;
 
 @end

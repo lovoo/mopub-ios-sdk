@@ -31,11 +31,8 @@ static const CGFloat kDefaultPixelCountWhenUsingPercentage = CGFLOAT_MIN;
 - (instancetype)initWithRequiredSecondsForImpression:(NSTimeInterval)requiredSecondsForImpression requiredViewVisibilityPixels:(CGFloat)visibilityPixels
 {
     if (self = [super init]) {
-        _viewVisibilityTimer = [MPTimer timerWithTimeInterval:kImpressionTimerInterval
-                                                       target:self
-                                                     selector:@selector(tick:)
-                                                      repeats:YES
-                                                  runLoopMode:NSRunLoopCommonModes];
+        _viewVisibilityTimer = [MPTimer timerWithTimeInterval:kImpressionTimerInterval target:self selector:@selector(tick:) repeats:YES];
+        _viewVisibilityTimer.runLoopMode = NSRunLoopCommonModes;
         _requiredSecondsForImpression = requiredSecondsForImpression;
         _pixelsRequiredForViewVisibility = visibilityPixels;
         _firstVisibilityTimestamp = kFirstVisibilityTimestampNone;
@@ -50,11 +47,8 @@ static const CGFloat kDefaultPixelCountWhenUsingPercentage = CGFLOAT_MIN;
         // Set `pixelsRequiredForViewVisibility` to a default invalid value so that we know to use the percent directly instead.
         _pixelsRequiredForViewVisibility = kDefaultPixelCountWhenUsingPercentage;
 
-        _viewVisibilityTimer = [MPTimer timerWithTimeInterval:kImpressionTimerInterval
-                                                       target:self
-                                                     selector:@selector(tick:)
-                                                      repeats:YES
-                                                  runLoopMode:NSRunLoopCommonModes];
+        _viewVisibilityTimer = [MPTimer timerWithTimeInterval:kImpressionTimerInterval target:self selector:@selector(tick:) repeats:YES];
+        _viewVisibilityTimer.runLoopMode = NSRunLoopCommonModes;
         _requiredSecondsForImpression = requiredSecondsForImpression;
         _percentageRequiredForViewVisibility = visibilityPercentage;
         _firstVisibilityTimestamp = kFirstVisibilityTimestampNone;
@@ -77,7 +71,7 @@ static const CGFloat kDefaultPixelCountWhenUsingPercentage = CGFLOAT_MIN;
         return;
     }
 
-    if (self.viewVisibilityTimer.isCountdownActive) {
+    if (self.viewVisibilityTimer.isScheduled) {
         MPLogInfo(@"viewVisibilityTimer is already started.");
         return;
     }

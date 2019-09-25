@@ -12,22 +12,13 @@
 
 @interface MPGeolocationProviderTest : XCTestCase
 
-@property (nonatomic, readonly) MoPub *mopubInstance;
-@property (nonatomic, readonly) MPConsentManager *consentManager;
-
 @end
 
 @implementation MPGeolocationProviderTest
 
 - (void)setUp {
     [super setUp];
-    if (self.mopubInstance == nil) {
-        _mopubInstance = [MoPub new];
-    }
-    if (self.consentManager == nil) {
-        _consentManager = [MPConsentManager new];
-    }
-    [self.consentManager setUpConsentManagerForTesting];
+    [[MPConsentManager sharedManager] setUpConsentManagerForTesting];
 }
 
 - (void)tearDown {
@@ -48,11 +39,12 @@
                               @"current_vendor_list_iab_hash": @"hash",
                               };
     // Update consent
-    BOOL success = [self.consentManager updateConsentStateWithParameters:response];
+    MPConsentManager * manager = MPConsentManager.sharedManager;
+    BOOL success = [manager updateConsentStateWithParameters:response];
     XCTAssertTrue(success);
 
-    [self.mopubInstance setLocationUpdatesEnabled:YES];
-    XCTAssertTrue(self.mopubInstance.locationUpdatesEnabled);
+    [MoPub.sharedInstance setLocationUpdatesEnabled:YES];
+    XCTAssertTrue(MoPub.sharedInstance.locationUpdatesEnabled);
 }
 
 - (void)testLocationUpdatesEnabledNotConsented {
@@ -68,11 +60,12 @@
                                @"current_vendor_list_iab_hash": @"hash",
                                };
     // Update consent
-    BOOL success = [self.consentManager updateConsentStateWithParameters:response];
+    MPConsentManager * manager = MPConsentManager.sharedManager;
+    BOOL success = [manager updateConsentStateWithParameters:response];
     XCTAssertTrue(success);
 
-    [self.mopubInstance setLocationUpdatesEnabled:YES];
-    XCTAssertFalse(self.mopubInstance.locationUpdatesEnabled);
+    [MoPub.sharedInstance setLocationUpdatesEnabled:YES];
+    XCTAssertFalse(MoPub.sharedInstance.locationUpdatesEnabled);
 }
 
 @end

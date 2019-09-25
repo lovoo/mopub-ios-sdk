@@ -16,14 +16,11 @@
 #import "MPRewardedVideoReward.h"
 #import "MPRewardedVideoError.h"
 
-@interface MPMoPubRewardedVideoCustomEvent()
+@interface MPMoPubRewardedVideoCustomEvent() <MPInterstitialViewControllerDelegate>
 
 @property (nonatomic) MPMRAIDInterstitialViewController *interstitial;
 @property (nonatomic) BOOL adAvailable;
 
-@end
-
-@interface MPMoPubRewardedVideoCustomEvent (MPInterstitialViewControllerDelegate) <MPInterstitialViewControllerDelegate>
 @end
 
 @implementation MPMoPubRewardedVideoCustomEvent
@@ -89,18 +86,9 @@
     }];
 }
 
-@end
+#pragma mark - MPMRAIDInterstitialViewControllerDelegate
 
-#pragma mark - MPInterstitialViewControllerDelegate
-
-@implementation MPMoPubRewardedVideoCustomEvent (MPInterstitialViewControllerDelegate)
-
-- (NSString *)adUnitId
-{
-    return [self.delegate adUnitId];
-}
-
-- (void)interstitialDidLoadAd:(id<MPInterstitialViewController>)interstitial
+- (void)interstitialDidLoadAd:(MPInterstitialViewController *)interstitial
 {
     MPLogAdEvent([MPLogEvent adLoadSuccessForAdapter:NSStringFromClass(self.class)], self.adUnitId);
 
@@ -108,17 +96,17 @@
     [self.delegate rewardedVideoDidLoadAdForCustomEvent:self];
 }
 
-- (void)interstitialDidAppear:(id<MPInterstitialViewController>)interstitial
+- (void)interstitialDidAppear:(MPInterstitialViewController *)interstitial
 {
     [self.delegate rewardedVideoDidAppearForCustomEvent:self];
 }
 
-- (void)interstitialWillAppear:(id<MPInterstitialViewController>)interstitial
+- (void)interstitialWillAppear:(MPInterstitialViewController *)interstitial
 {
     [self.delegate rewardedVideoWillAppearForCustomEvent:self];
 }
 
-- (void)interstitialDidFailToLoadAd:(id<MPInterstitialViewController>)interstitial
+- (void)interstitialDidFailToLoadAd:(MPInterstitialViewController *)interstitial
 {
     NSString * message = [NSString stringWithFormat:@"Failed to load creative:\n%@", self.delegate.configuration.adResponseHTMLString];
     NSError * error = [NSError errorWithCode:MOPUBErrorAdapterFailedToLoadAd localizedDescription:message];
@@ -128,12 +116,12 @@
     [self.delegate rewardedVideoDidFailToLoadAdForCustomEvent:self error:nil];
 }
 
-- (void)interstitialWillDisappear:(id<MPInterstitialViewController>)interstitial
+- (void)interstitialWillDisappear:(MPInterstitialViewController *)interstitial
 {
     [self.delegate rewardedVideoWillDisappearForCustomEvent:self];
 }
 
-- (void)interstitialDidDisappear:(id<MPInterstitialViewController>)interstitial
+- (void)interstitialDidDisappear:(MPInterstitialViewController *)interstitial
 {
     self.adAvailable = NO;
     [self.delegate rewardedVideoDidDisappearForCustomEvent:self];
@@ -142,12 +130,12 @@
     self.interstitial = nil;
 }
 
-- (void)interstitialDidReceiveTapEvent:(id<MPInterstitialViewController>)interstitial
+- (void)interstitialDidReceiveTapEvent:(MPInterstitialViewController *)interstitial
 {
     [self.delegate rewardedVideoDidReceiveTapEventForCustomEvent:self];
 }
 
-- (void)interstitialWillLeaveApplication:(id<MPInterstitialViewController>)interstitial
+- (void)interstitialWillLeaveApplication:(MPInterstitialViewController *)interstitial
 {
     [self.delegate rewardedVideoWillLeaveApplicationForCustomEvent:self];
 }
@@ -155,7 +143,18 @@
 - (void)interstitialRewardedVideoEnded
 {
     MPLogInfo(@"MoPub rewarded video finished playing.");
-    [self.delegate rewardedVideoShouldRewardUserForCustomEvent:self reward:self.delegate.configuration.selectedReward];
+    [self.delegate rewardedVideoShouldRewardUserForCustomEvent:self reward:[self configuration].selectedReward];
+}
+
+#pragma mark - MPPrivateRewardedVideoCustomEventDelegate
+- (NSString *)adUnitId
+{
+    return [self.delegate adUnitId];
+}
+
+- (MPAdConfiguration *)configuration
+{
+    return [self.delegate configuration];
 }
 
 @end

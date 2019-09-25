@@ -27,6 +27,8 @@ typedef enum {
 - (NSString *)mp_queryParameterForKey:(NSString *)key;
 - (NSArray *)mp_queryParametersForKey:(NSString *)key;
 - (NSDictionary *)mp_queryAsDictionary;
+- (BOOL)mp_hasTelephoneScheme;
+- (BOOL)mp_hasTelephonePromptScheme;
 - (BOOL)mp_isSafeForLoadingWithoutUserAction;
 - (BOOL)mp_isMoPubScheme;
 - (MPMoPubHostCommand)mp_mopubHostCommand;

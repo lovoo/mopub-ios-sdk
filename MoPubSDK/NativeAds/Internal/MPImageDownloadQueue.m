@@ -39,27 +39,19 @@
     [_imageDownloadQueue cancelAllOperations];
 }
 
-- (void)addDownloadImageURLs:(NSArray<NSURL *> *)imageURLs
-             completionBlock:(MPImageDownloadQueueCompletionBlock)completionBlock
+- (void)addDownloadImageURLs:(NSArray *)imageURLs completionBlock:(MPImageDownloadQueueCompletionBlock)completionBlock
 {
-    [self addDownloadImageURLs:imageURLs useCachedImage:YES completionBlock:completionBlock];
+    [self addDownloadImageURLs:imageURLs completionBlock:completionBlock useCachedImage:YES];
 }
 
-- (void)addDownloadImageURLs:(NSArray<NSURL *> *)imageURLs
-              useCachedImage:(BOOL)useCachedImage
-             completionBlock:(MPImageDownloadQueueCompletionBlock)completionBlock
+- (void)addDownloadImageURLs:(NSArray *)imageURLs completionBlock:(MPImageDownloadQueueCompletionBlock)completionBlock useCachedImage:(BOOL)useCachedImage
 {
-    __block NSMutableDictionary *result = [NSMutableDictionary new];
     __block NSMutableArray *errors = nil;
 
     for (NSURL *imageURL in imageURLs) {
         [self.imageDownloadQueue addOperationWithBlock:^{
             @autoreleasepool {
-                if ([[MPNativeCache sharedCache] cachedDataExistsForKey:imageURL.absoluteString] && useCachedImage) {
-                    NSData *imageData = [[MPNativeCache sharedCache] retrieveDataForKey:imageURL.absoluteString];
-                    UIImage *image = [UIImage imageWithData:imageData];
-                    result[imageURL] = image;
-                } else if (![[MPNativeCache sharedCache] cachedDataExistsForKey:imageURL.absoluteString] || !useCachedImage) {
+                if (![[MPNativeCache sharedCache] cachedDataExistsForKey:imageURL.absoluteString] || !useCachedImage) {
                     MPLogDebug(@"Downloading %@", imageURL);
 
                     __block NSError *error = nil;
@@ -81,7 +73,6 @@
                         UIImage *downloadedImage = [UIImage imageWithData:data];
                         if (downloadedImage != nil) {
                             [[MPNativeCache sharedCache] storeData:data forKey:imageURL.absoluteString];
-                            result[imageURL] = downloadedImage;
                         } else {
                             if (downloadedImage == nil) {
                                 MPLogDebug(@"Error: invalid image data downloaded");
@@ -111,7 +102,7 @@
     [self.imageDownloadQueue addOperationWithBlock:^{
         dispatch_async(dispatch_get_main_queue(), ^{
             if (!self.isCanceled) {
-                completionBlock(result, errors);
+                completionBlock(errors);
             }
         });
     }];

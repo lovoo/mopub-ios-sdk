@@ -11,4 +11,5 @@
 
 @interface MPWebView (Testing)
 @property (weak, nonatomic) WKWebView *wkWebView;
+@property (weak, nonatomic) UIWebView *uiWebView;
 @end

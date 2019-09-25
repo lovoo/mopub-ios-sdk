@@ -92,15 +92,6 @@ class AdTableViewController: UIViewController, AdViewController {
         
         // Update the title
         title = dataSource.adUnit.name
-        
-        // Add split view controller collapse button if applicable
-        navigationItem.leftBarButtonItem = splitViewController?.displayModeButtonItem
-        navigationItem.leftItemsSupplementBackButton = true
-        
-        // Set the background color for Dark Mode
-        if #available(iOS 13.0, *) {
-            view.backgroundColor = .systemBackground
-        }
     }
     
     override func viewWillTransition(to size: CGSize, with coordinator: UIViewControllerTransitionCoordinator) {
@@ -238,13 +229,11 @@ extension AdTableViewController: UITableViewDataSource {
      */
     func tableView(_ tableView: UITableView, actionCellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueCellFromNib(cellType: AdActionsTableViewCell.self)
-        cell.delegate = self
-        
         let isAdLoading = dataSource.isAdLoading
         let loadHandler = dataSource.actionHandlers[.load]
         let showHandler = dataSource.actionHandlers[.show]
         let showEnabled = dataSource.isAdLoaded
-        cell.refresh(adSize: dataSource.requestedAdSize, isAdLoading: isAdLoading, loadAdHandler: loadHandler, showAdHandler: showHandler, showButtonEnabled: showEnabled)
+        cell.refresh(isAdLoading: isAdLoading, loadAdHandler: loadHandler, showAdHandler: showHandler, showButtonEnabled: showEnabled)
         return cell
     }
     
@@ -264,14 +253,6 @@ extension AdTableViewController: UITableViewDataSource {
         
         cell.accessibilityIdentifier = status.title
         return cell
-    }
-}
-
-extension AdTableViewController: AdActionsTableViewCellDelegate {
-    // MARK: - AdActionsTableViewCellDelegate
-    
-    func requestedAdSizeUpdated(to size: CGSize) {
-        dataSource.requestedAdSize = size
     }
 }
 

@@ -8,41 +8,33 @@
 
 #import "MOPUBExperimentProvider.h"
 
-@interface MOPUBExperimentProvider ()
-@property (nonatomic, assign) BOOL isDisplayAgentOverriddenByClient;
-@end
-
 @implementation MOPUBExperimentProvider
 
-@synthesize displayAgentType = _displayAgentType;
+static BOOL gIsDisplayAgentOverriddenByClient = NO;
+static MOPUBDisplayAgentType gDisplayAgentType = MOPUBDisplayAgentTypeInApp;
 
-- (instancetype)init {
-    self = [super init];
-    if (self != nil) {
-        _isDisplayAgentOverriddenByClient = NO;
-        _displayAgentType = MOPUBDisplayAgentTypeInApp;
++ (void)setDisplayAgentType:(MOPUBDisplayAgentType)displayAgentType
+{
+    gIsDisplayAgentOverriddenByClient = YES;
+    gDisplayAgentType = displayAgentType;
+}
+
++ (void)setDisplayAgentFromAdServer:(MOPUBDisplayAgentType)displayAgentType
+{
+    if (!gIsDisplayAgentOverriddenByClient) {
+        gDisplayAgentType = displayAgentType;
     }
-    return self;
 }
 
-+ (instancetype)sharedInstance {
-    static dispatch_once_t once;
-    static id _sharedInstance;
-    dispatch_once(&once, ^{
-        _sharedInstance = [self new];
-    });
-    return _sharedInstance;
++ (MOPUBDisplayAgentType)displayAgentType
+{
+    return gDisplayAgentType;
 }
 
-- (void)setDisplayAgentType:(MOPUBDisplayAgentType)displayAgentType {
-    _isDisplayAgentOverriddenByClient = YES;
-    _displayAgentType = displayAgentType;
-}
-
-- (void)setDisplayAgentFromAdServer:(MOPUBDisplayAgentType)displayAgentType {
-    if (!self.isDisplayAgentOverriddenByClient) {
-        _displayAgentType = displayAgentType;
-    }
+// used in test only
++ (void)setDisplayAgentOverriddenByClientFlag:(BOOL)flag
+{
+    gIsDisplayAgentOverriddenByClient = flag;
 }
 
 @end
