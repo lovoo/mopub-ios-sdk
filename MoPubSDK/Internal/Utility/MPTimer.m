@@ -50,7 +50,9 @@
     // a potential deadlock, scheduling to the main thread will be asynchronous
     // on the next main thread run loop.
     void (^mainThreadOperation)(void) = ^void(void) {
-        [NSRunLoop.mainRunLoop addTimer:timer.timer forMode:runLoopMode];
+        if(timer.timer.isValid) {
+            [NSRunLoop.mainRunLoop addTimer:timer.timer forMode:runLoopMode];
+        }
     };
 
     if ([NSThread isMainThread]) {
