@@ -660,7 +660,7 @@ static NSString * const kMacroReplaceLanguageCode = @"%%LANGUAGE%%";
     BOOL didTransition = NO;
 
     // Transitioned from an "allowed to track" to "do not track" state.
-    BOOL trackingAllowed = ASIdentifierManager.sharedManager.advertisingTrackingEnabled;
+    BOOL trackingAllowed = MPIdentityProvider.advertisingTrackingEnabled;
     MPConsentStatus status = self.currentStatus;
     if (status != MPConsentStatusDoNotTrack && !trackingAllowed) {
         didTransition = [self setCurrentStatus:MPConsentStatusDoNotTrack reason:kConsentedChangedReasonDoNotTrackEnabled statusWasReacquired:NO shouldBroadcast:YES];

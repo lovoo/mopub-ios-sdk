@@ -10,11 +10,13 @@
 #import "MPGlobal.h"
 #import "MPConsentManager.h"
 #import <AdSupport/AdSupport.h>
+@import AppTrackingTransparency;
 
 #define MOPUB_IDENTIFIER_DEFAULTS_KEY @"com.mopub.identifier"
 #define MOPUB_IDENTIFIER_LAST_SET_TIME_KEY @"com.mopub.identifiertime"
 #define MOPUB_DAY_IN_SECONDS 24 * 60 * 60
 #define MOPUB_ALL_ZERO_UUID @"00000000-0000-0000-0000-000000000000"
+#define MOPUB_OPT_OUT_IDFA @"00000000-0000-0000-0000-000000000000"
 NSString *const mopubPrefix = @"mopub:";
 
 static BOOL gFrequencyCappingIdUsageEnabled = YES;
@@ -68,7 +70,20 @@ static BOOL gFrequencyCappingIdUsageEnabled = YES;
 
 + (BOOL)advertisingTrackingEnabled
 {
-    return [[ASIdentifierManager sharedManager] isAdvertisingTrackingEnabled];
+    if (@available(iOS 14, *)) {
+        // iOS 14 will restrict IDFA access without opt-in at some indeterminate point in the future.
+        // It seems like the most efficient way to determine opt-in status is just to see whether the
+        // IDFA is 0 or not.
+        
+        NSString * const idfa = [[[ASIdentifierManager sharedManager] advertisingIdentifier] UUIDString];
+        if ([idfa isEqualToString:MOPUB_OPT_OUT_IDFA]) {
+            return NO;
+        } else {
+            return YES;
+        }
+    } else {
+        return [[ASIdentifierManager sharedManager] isAdvertisingTrackingEnabled];
+    }
 }
 
 + (NSString *)identifierFromASIdentifierManager:(BOOL)obfuscate
