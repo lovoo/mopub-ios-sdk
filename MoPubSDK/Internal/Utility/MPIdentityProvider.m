@@ -10,7 +10,6 @@
 #import "MPGlobal.h"
 #import "MPConsentManager.h"
 #import <AdSupport/AdSupport.h>
-@import AppTrackingTransparency;
 
 #define MOPUB_IDENTIFIER_DEFAULTS_KEY @"com.mopub.identifier"
 #define MOPUB_IDENTIFIER_LAST_SET_TIME_KEY @"com.mopub.identifiertime"
